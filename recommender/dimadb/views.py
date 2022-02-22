@@ -908,9 +908,9 @@ def get_embedded_link(api):
     recommend_link += '\trecommendItems.then(res => {' + '\n'
     recommend_link += '\t\t//Handle recommend items here' + '\n'
     recommend_link += '\t\t//Uncomment below code if we need to show view results' + '\n'
-    recommend_link += '\t\t//console.log(recommendItems);' + '\n'
+    recommend_link += '\t\t//console.log(res);' + '\n'
     recommend_link += '\t\t//Uncomment below code if we need to show recommendation UI' + '\n'
-    recommend_link += '\t\t//getListView("recommendItem", recommendItems);' + '\n'
+    recommend_link += '\t\t//getListView("recommendItem", res);' + '\n'
     recommend_link += '\t});' + '\n'
     recommend_link += '</script>'
     

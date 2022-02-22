@@ -24,8 +24,7 @@ async function getRecommendItems(url, itemType, recommendType) {
   return recommendItems;
 }
 
-function getListView(containerId, result) {
-  result.then((res) => {
+function getListView(containerId, res) {
     const recommendItems = res.items;
     const itemType = res.itemType;
     const recommendType = res.recommendType;
@@ -82,7 +81,6 @@ function getListView(containerId, result) {
                 `;
       }
     }
-  });
 }
 
 function generateRecommendAPI(
