@@ -1,0 +1,17 @@
+{
+    "event": {
+        "model_name": "events",
+        "fields": ["id", "event_id", "event_name", "event_title","event_type", "start_date", "end_date", "next_date", "status"],
+        "view_detail": true
+    },
+    "article": {
+        "model_name": "products",
+        "fields": ["id", "product_id", "product_name", "product_type", "product_price", "product_revenue", "status"],
+        "view_detail": true
+    },
+    "web-activity": {
+        "model_name": "interaction",
+        "fields": ["id", "interaction_id", "session_id", "visit_date", "event_name", "operating_system", "device_category", "device_brand", "browser", "page_title", "page_location"],
+        "view_detail": false
+    }
+}

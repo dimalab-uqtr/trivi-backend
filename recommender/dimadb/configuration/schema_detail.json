@@ -1,0 +1,162 @@
+{
+    "event": {
+        "model_name": "events",
+        "display_name": "events",
+        "fields": [
+            "id",
+            "event_id",
+            "event_name",
+            "event_type",
+            "event_price",
+            "slug",
+            "lang",
+            "img",
+            "url",
+            "start_date",
+            "end_date",
+            "next_date",
+            "count_down",
+            "recurring_freg",
+            "recurring_count",
+            "recurring_by_day",
+            "is_public",
+            "status",
+            "description",
+            "group_id"
+        ],
+        "m2m_tables": [
+            {
+                "model_name": "geolocation",
+                "display_name": "venue",
+                "fields": [
+                    "id",
+                    "location_id",
+                    "location_name",
+                    "address",
+                    "address2",
+                    "city",
+                    "region",
+                    "state",
+                    "zip",
+                    "country"
+                ],
+                "connected_field1": "event_id",
+                "connected_field2": "location_id",
+                "connected_table": {
+                    "model_name": "eventlocation",
+                    "display_name": "",
+                    "fields": [
+                        "id", 
+                        "room", 
+                        "description"
+                    ]
+                }
+            },
+            {
+                "model_name": "resource",
+                "display_name": "resource",
+                "fields": [
+                    "id",
+                    "resource_id",
+                    "resource_type",
+                    "resource_name",
+                    "resource_url"
+                ],
+                "connected_field1": "event_id",
+                "connected_field2": "resource_id",
+                "connected_table": {
+                    "model_name": "eventresource",
+                    "display_name": "",
+                    "fields": [
+                        "id",
+                        "description"
+                    ]
+                }
+            },
+            {
+                "model_name": "businessentity",
+                "display_name": "proprietor",
+                "fields": [
+                    "id",
+                    "entity_id",
+                    "entity_name",
+                    "slug",
+                    "description"
+                  ],
+                "connected_field1": "event_id",
+                "connected_field2": "entity_id",
+                "connected_table": {
+                    "model_name": "entityeventrole",
+                    "display_name": "",
+                    "fields": [
+                        "id", 
+                        "role_name"
+                    ]
+                }
+            }
+        ],
+        "o2m_tables": []
+    },
+    "article": {
+        "model_name": "products",
+        "display_name": "articles",
+        "fields": [
+            "id",
+            "product_id",
+            "product_name",
+            "slug",
+            "product_type",
+            "product_price",
+            "img",
+            "url",
+            "status",
+            "description",
+            "group_id"
+        ],
+        "m2m_tables": [
+            {
+                "model_name": "resource",
+                "display_name": "resource",
+                "fields": [
+                    "id",
+                    "resource_id",
+                    "resource_type",
+                    "resource_name",
+                    "resource_url"
+                ],
+                "connected_field1": "product_id",
+                "connected_field2": "resource_id",
+                "connected_table": {
+                    "model_name": "productresource",
+                    "display_name": "",
+                    "fields": [
+                        "id",
+                        "description"
+                    ]
+                }
+            },
+            {
+                "model_name": "businessentity",
+                "display_name": "proprietor",
+                "fields": [
+                    "id",
+                    "entity_id",
+                    "entity_name",
+                    "slug",
+                    "description"
+                  ],
+                "connected_field1": "product_id",
+                "connected_field2": "entity_id",
+                "connected_table": {
+                    "model_name": "entityproductrole",
+                    "display_name": "",
+                    "fields": [
+                        "id", 
+                        "role_name"
+                    ]
+                }
+            }
+        ],
+        "o2m_tables": []
+    }
+}
