@@ -1,12 +1,12 @@
 {
     "event": {
         "model_name": "events",
-        "fields": ["id", "event_id", "event_name", "event_title","event_type", "start_date", "end_date", "next_date", "status"],
+        "fields": ["id", "event_id", "event_name", "event_title", "event_type", "status"],
         "view_detail": true
     },
     "article": {
         "model_name": "products",
-        "fields": ["id", "product_id", "product_name", "product_type", "product_price", "product_revenue", "status"],
+        "fields": ["id", "product_id", "product_name", "product_type", "status"],
         "view_detail": true
     },
     "web-activity": {

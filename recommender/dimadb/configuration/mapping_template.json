@@ -24,18 +24,6 @@
                     "type": "string",
                     "source_name": "lang"
                 },
-                "start_date": {
-                    "type": "date",
-                    "source_name": "start_date"
-                },
-                "end_date": {
-                    "type": "date",
-                    "source_name": "end_date"
-                },
-                "next_date": {
-                    "type": "date",
-                    "source_name": "next_date"
-                },
                 "count_down": {
                     "type": "int",
                     "source_name": "event_dates_count"
@@ -257,7 +245,41 @@
                     ]
                 }
             ],
-            "o2m_tables": []
+            "o2m_tables": [
+                {
+                    "model_name": "eventdate",
+                    "display_name": "event_date",
+                    "sources": [
+                        {
+                            "connected_field": "event_id",
+                            "fields": {
+                                "date": {
+                                    "type": "string",
+                                    "source_name": "start_date"
+                                }
+                            }
+                        },
+                        {
+                            "connected_field": "event_id",
+                            "fields": {
+                                "date": {
+                                    "type": "string",
+                                    "source_name": "next_date"
+                                }
+                            }
+                        },
+                        {
+                            "connected_field": "event_id",
+                            "fields": {
+                                "date": {
+                                    "type": "string",
+                                    "source_name": "end_date"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         "crawl_data": {
             "model_name": "events",

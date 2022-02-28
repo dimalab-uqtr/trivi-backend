@@ -118,7 +118,7 @@ class Resource(models.Model):
     resource_id = models.CharField(max_length=50, null=True, blank=True)
     resource_name = models.CharField(max_length=150, null=True, blank=True)
     resource_type = models.CharField(max_length=50, null=True, blank=True)
-    resource_url = models.CharField(max_length=200)
+    resource_url = models.CharField(max_length=200, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
 
 # PriceType

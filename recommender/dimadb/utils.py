@@ -22,11 +22,13 @@ def filter_imported_object_info(list_attributes, obj):
         if 'default' in attribute_info:
             new_obj[attribute] = attribute_info['default']
         elif 'source_name' in attribute_info:
-            source_value = pydash.get(obj, attribute_info['source_name'])
+            if (type(obj) is dict):
+                source_value = pydash.get(obj, attribute_info['source_name'])
+            else:
+                source_value = obj
+                
             if (source_value == 0 or source_value == '0'):
                 new_obj[attribute] = source_value
-            elif (source_value is None):
-                new_obj[attribute] =  obj or None
             else:
                 new_obj[attribute] = source_value or None
             
