@@ -118,6 +118,7 @@ class LdaModelManager(object):
         # Looping through each pair of product and calculate the similarity
         for source_index in range(0, len(events)-1):
             for target_index in range(source_index + 1, len(events)):
+                print(source_index, target_index)
                 source_record = events[source_index]
                 target_record = events[target_index]
 
@@ -127,22 +128,23 @@ class LdaModelManager(object):
                     self.model.get_document_topics(target_record[1], minimum_probability=0)
                     )
 
-                source = source_record[0]
-                target = target_record[0]
-                
-                try:
+                if (float(sim) >= 0.5):
+                    source = source_record[0]
+                    target = target_record[0]
                     
-                    # First try updating the existing records.
-                    u_record = LdaSimilarity.objects.get(source=source.id, target=target.id, item_type=table_name)
-                    u_record.similarity = float(sim)
-                    u_record.version = latest_version
-                    updated_records.append(u_record)
-                except LdaSimilarity.DoesNotExist:
-                    
-                    # If there is no record, create a new records. 
-                    c_record = LdaSimilarity(source=source.id, target=target.id, item_type=table_name, similarity=float(sim), version=latest_version)
-                    created_records.append(c_record)
-        
+                    try:
+                        
+                        # First try updating the existing records.
+                        u_record = LdaSimilarity.objects.get(source=source.id, target=target.id, item_type=table_name)
+                        u_record.similarity = float(sim)
+                        u_record.version = latest_version
+                        updated_records.append(u_record)
+                    except LdaSimilarity.DoesNotExist:
+                        
+                        # If there is no record, create a new records. 
+                        c_record = LdaSimilarity(source=source.id, target=target.id, item_type=table_name, similarity=float(sim), version=latest_version)
+                        created_records.append(c_record)
+            
         # Proceed the database transaction/query here.
         if len(created_records) > 0:
             LdaSimilarity.objects.bulk_create(created_records)

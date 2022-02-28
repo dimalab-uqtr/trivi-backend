@@ -230,26 +230,7 @@ def get_item_detail_form(pk, schema_detail):
                         "%Y-%m-%d")
             else:
                 form_attributes[field]['type'] = 'text'
-
-    # List m2m tables consists additional info of item (geolocation, resource, etc.)
-    # Ex: event - eventlocation(connected_table, who hold 2 primary keys of two tables) - geolocation(m2m)
-    for m2m_table in m2m_tables:
-        # Get config info
-        m2m_display_name = m2m_table['display_name']
-        connected_table = m2m_table['connected_table']
-        connected_field1 = m2m_table['connected_field1']
-        connected_field2 = m2m_table['connected_field2']
-        # Get list of rows in m2m table
-        form_attributes[m2m_display_name] = {}
-        form_attributes[m2m_display_name]['type'] = 'm2m'
-        form_attributes[m2m_display_name]['value'] = get_m2m_items(m2m_table, obj_id)
-        # Create an empty form info for m2m table
-        element_attributes = get_item_detail_form('form', m2m_table)
-        element_attributes['connectedAttributes'] = get_item_detail_form('form', connected_table)
-        element_attributes['connectedAttributes']['connected_field1'] = connected_field1
-        element_attributes['connectedAttributes']['connected_field2'] = connected_field2
-        form_attributes[m2m_display_name]['elementAttributes'] = element_attributes
-
+                
     # List o2m tables conists additional info of item (geolocation, resource, etc.)
     # Ex: evet - eventpreference(o2m)
     for o2m_table in o2m_tables:
@@ -272,8 +253,27 @@ def get_item_detail_form(pk, schema_detail):
         'name': model_name
     }
 
-    return form_info
+    # List m2m tables consists additional info of item (geolocation, resource, etc.)
+    # Ex: event - eventlocation(connected_table, who hold 2 primary keys of two tables) - geolocation(m2m)
+    for m2m_table in m2m_tables:
+        # Get config info
+        m2m_display_name = m2m_table['display_name']
+        connected_table = m2m_table['connected_table']
+        connected_field1 = m2m_table['connected_field1']
+        connected_field2 = m2m_table['connected_field2']
+        # Get list of rows in m2m table
+        form_attributes[m2m_display_name] = {}
+        form_attributes[m2m_display_name]['type'] = 'm2m'
+        form_attributes[m2m_display_name]['value'] = get_m2m_items(m2m_table, obj_id)
+        # Create an empty form info for m2m table
+        element_attributes = get_item_detail_form('form', m2m_table)
+        element_attributes['connectedAttributes'] = get_item_detail_form('form', connected_table)
+        element_attributes['connectedAttributes']['connected_field1'] = connected_field1
+        element_attributes['connectedAttributes']['connected_field2'] = connected_field2
+        form_attributes[m2m_display_name]['elementAttributes'] = element_attributes
 
+
+    return form_info
 
 # Update item based on form sent from GUI
 def update_item_info(form_info, connected_field1_id=None):
@@ -409,98 +409,96 @@ def create_connected_object(form_info, connected_field1_id, connected_field2_id)
 def mapping_data(data, template):
     total = 0   # Total object rows in imported data
     count = 0   # Total object rows saved in database
-    try:
-        if isinstance(data, list):
-            total = len(data)
-            # Store history of import
-            import_info = ImportInfo(table_name=template['model_name'])
-            import_info.save()
-            
-            # Get info from schema_detail
-            model_name = template['model_name']
-            fields = template['fields']
-            m2m_tables = []
-            o2m_tables = []
-            if ('m2m_tables' in template.keys()):
-                m2m_tables = template['m2m_tables']
-            if ('o2m_tables' in template.keys()):
-                o2m_tables = template['o2m_tables']
+    if isinstance(data, list):
+        total = len(data)
+        # Store history of import
+        import_info = ImportInfo(table_name=template['model_name'])
+        import_info.save()
+        
+        # Get info from schema_detail
+        model_name = template['model_name']
+        fields = template['fields']
+        m2m_tables = []
+        o2m_tables = []
+        if ('m2m_tables' in template.keys()):
+            m2m_tables = template['m2m_tables']
+        if ('o2m_tables' in template.keys()):
+            o2m_tables = template['o2m_tables']
 
-            #Mapping
-            for obj in data:
-                obj_info = filter_imported_object_info(fields, obj)
-                if obj_info:
-                    # Store obj in primary table
-                    obj_info['import_id'] = import_info.id
-                    Model = apps.get_model(app_label='dimadb', model_name=model_name)
-                    new_obj = Model(**obj_info)
-                    new_obj.save()
+        #Mapping
+        for obj in data:
+            obj_info = filter_imported_object_info(fields, obj)
+            if obj_info:
+                # Store obj in primary table
+                obj_info['import_id'] = import_info.id
+                Model = apps.get_model(app_label='dimadb', model_name=model_name)
+                new_obj = Model(**obj_info)
+                new_obj.save()
+                # Store additional objs in m2m tables
+                for m2m_table in m2m_tables:
+                    m2m_model_name = m2m_table['model_name']
+                    m2m_sources = m2m_table['sources']
 
-                    # Store additional objs in m2m tables
-                    for m2m_table in m2m_tables:
-                        m2m_model_name = m2m_table['model_name']
-                        m2m_sources = m2m_table['sources']
+                    for source in m2m_sources:
+                        m2m_objs = []
+                        if 'array' not in source:
+                            m2m_objs.append(obj)
+                        else:
+                            if (pydash.get(obj, source['array'])):
+                                m2m_objs = pydash.get(obj, source['array'])
 
-                        for source in m2m_sources:
-                            m2m_objs = []
-                            if 'array' not in source:
-                                m2m_objs.append(obj)
-                            else:
-                                if (pydash.get(obj, source['array'])):
-                                    m2m_objs = pydash.get(obj, source['array'])
+                        for m2m_obj in m2m_objs:
+                            m2m_obj_info = filter_imported_object_info(source['fields'], m2m_obj)
+                            if (m2m_obj_info):
+                                m2m_obj_info['import_id'] = import_info.id
+                                M2MModel = apps.get_model(app_label='dimadb', model_name=m2m_model_name)
+                                new_m2m_obj = M2MModel(**m2m_obj_info)
+                                new_m2m_obj.save()
 
-                            for m2m_obj in m2m_objs:
-                                m2m_obj_info = filter_imported_object_info(source['fields'], m2m_obj)
-                                if (m2m_obj_info):
-                                    m2m_obj_info['import_id'] = import_info.id
-                                    M2MModel = apps.get_model(app_label='dimadb', model_name=m2m_model_name)
-                                    new_m2m_obj = M2MModel(**m2m_obj_info)
-                                    new_m2m_obj.save()
+                                # Store obj in connected table
+                                # Read configure info
+                                connected_table = source['connected_table']
+                                connected_field1 = source['connected_field1']
+                                connected_field2 = source['connected_field2']
+                                connected_model_name = connected_table['model_name']
 
-                                    # Store obj in connected table
-                                    # Read configure info
-                                    connected_table = source['connected_table']
-                                    connected_field1 = source['connected_field1']
-                                    connected_field2 = source['connected_field2']
-                                    connected_model_name = connected_table['model_name']
+                                connected_obj_info = filter_imported_object_info(connected_table['fields'], m2m_obj)
+                                connected_obj_info[connected_field1] = new_obj.id
+                                connected_obj_info[connected_field2] = new_m2m_obj.id
+                                connected_obj_info['import_id'] = import_info.id
+                                ConnectedModel = apps.get_model(app_label='dimadb', model_name=connected_model_name)
+                                new_connected_obj = ConnectedModel(**connected_obj_info)
+                                new_connected_obj.save()
 
-                                    connected_obj_info = filter_imported_object_info(connected_table['fields'], m2m_obj)
-                                    connected_obj_info[connected_field1] = new_obj.id
-                                    connected_obj_info[connected_field2] = new_m2m_obj.id
-                                    connected_obj_info['import_id'] = import_info.id
-                                    ConnectedModel = apps.get_model(app_label='dimadb', model_name=connected_model_name)
-                                    new_connected_obj = ConnectedModel(**connected_obj_info)
-                                    new_connected_obj.save()
+                # Store additional objs in o2m tables
+                for o2m_table in o2m_tables:
+                    o2m_model_name = o2m_table['model_name']
+                    sources = o2m_table['sources']
 
-                    # Store additional objs in o2m tables
-                    for o2m_table in o2m_tables:
-                        o2m_model_name = o2m_table['model_name']
-                        sources = o2m_table['sources']
+                    for source in sources:
+                        o2m_objs = []
+                        if 'array' not in source:
+                            o2m_objs.append(obj)
+                        else:
+                            if (pydash.get(obj, source['array'])):
+                                o2m_objs = pydash.get(obj, source['array'])
 
-                        for source in sources:
-                            o2m_objs = []
-                            if 'array' not in source:
-                                o2m_objs.append(obj)
-                            else:
-                                if (pydash.get(obj, source['array'])):
-                                    o2m_objs = pydash.get(obj, source['array'])
+                        for o2m_obj in o2m_objs:
+                            o2m_obj_info = filter_imported_object_info(source['fields'], o2m_obj)
+                            if (o2m_obj_info):
+                                connected_field = source['connected_field']
+                                o2m_obj_info[connected_field] = new_obj.id
+                                o2m_obj_info['import_id'] = import_info.id
+                                O2MModel = apps.get_model(app_label='dimadb', model_name=o2m_model_name)
+                                new_o2m_obj = O2MModel(**o2m_obj_info)
+                                new_o2m_obj.save()
 
-                            for o2m_obj in o2m_objs:
-                                o2m_obj_info = filter_imported_object_info(source['fields'], o2m_obj)
-                                if (o2m_obj_info):
-                                    connected_field = source['connected_field']
-                                    o2m_obj_info[connected_field] = new_obj.id
-                                    o2m_obj_info['import_id'] = import_info.id
-                                    O2MModel = apps.get_model(app_label='dimadb', model_name=o2m_model_name)
-                                    new_o2m_obj = O2MModel(**o2m_obj_info)
-                                    new_o2m_obj.save()
-
-                count += 1
-            return {'message': 'Import successfully' + '.\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
-        else:
-            return {'message': 'Wrong json format'}
-    except Exception as error:
-        return {'message':  'There is an error(duplication, ...).\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
+            count += 1
+        return {'message': 'Import successfully' + '.\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
+    else:
+        return {'message': 'Wrong json format'}
+    # except Exception as error:
+    #     return {'message':  'There is an error(duplication, ...).\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
 
 
 # Some imported json file required to be reformated before mapping
@@ -628,9 +626,9 @@ def get_import_info(request, item_type):
 def delete_imported_items(request, item_type, pk):
     try:
         tables = {
-            "event": ["events", "geolocation", "eventlocation", "resource", "eventresource", "businessentity", "entityeventrole"],
+            "event": ["events", "geolocation", "eventlocation", "resource", "eventresource", "businessentity", "entityeventrole", "eventdate"],
             "article": ["products", "resource", "productresource", "businessentity", "entityproductrole"],
-            "web-activity": ["interaction", "geolocation", "interactionlocation", "eventpreference", "productpreference"]
+            "web-activity": ["interaction", "geolocation", "interactionlocation", "eventpreference", "productpreference", "itempreference"]
         }
 
         for table in tables[item_type]:
@@ -723,9 +721,9 @@ def get_most_popular(table_name, sort_field, display_fields, quantity=1, domain=
 
         # Find web activities that contain this item
         if (table_name == 'events'):
-            list_item_activities = EventPreference.objects.filter(event_id=obj['event_id'])
+            list_item_activities = ItemPreference.objects.filter(item_id=obj['event_id'], item_type='event')
         elif (table_name == 'products'):
-            list_item_activities = ProductPreference.objects.filter(product_id=obj['product_id'])
+            list_item_activities = ItemPreference.objects.filter(item_id=obj['product_id'], item_type='product')
 
         # For each web activity, find important weight of web activity type
         for item_activity in list(list_item_activities):

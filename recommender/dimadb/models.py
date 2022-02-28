@@ -62,6 +62,13 @@ class Events(models.Model):
     modified_by = models.CharField(max_length=150, null=True, blank=True)
     group_id = models.CharField(max_length=30, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
+    
+class EventDate(models.Model):
+    id = models.AutoField(primary_key=True)
+    event_id = models.CharField(max_length=150, null=True, blank=True)
+    date = models.DateTimeField(null=True)
+    import_id = models.CharField(max_length=30, null=True, blank=True)
+    
 
 # New_event:
 
@@ -248,6 +255,18 @@ class ProductPreference(models.Model):
     preference_type = models.CharField(max_length=50, null=True, blank=True)
     preference_value = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     product_id = models.CharField(max_length=50, null=True, blank=True)
+    activity_id = models.CharField(max_length=50, null=True, blank=True)
+    import_id = models.CharField(max_length=30, null=True, blank=True)
+    
+# Item Preferene
+
+class ItemPreference(models.Model):
+    id = models.AutoField(primary_key=True)
+    preference_id = models.CharField(max_length=50, null=True, blank=True)
+    preference_type = models.CharField(max_length=50, null=True, blank=True)
+    preference_value = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    item_id = models.CharField(max_length=50, null=True, blank=True)
+    item_type = models.CharField(max_length=50, null=True, blank=True)
     activity_id = models.CharField(max_length=50, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
 

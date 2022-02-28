@@ -27,7 +27,7 @@
         "m2m_tables": [
             {
                 "model_name": "geolocation",
-                "display_name": "venue",
+                "display_name": "event_location",
                 "fields": [
                     "id",
                     "location_id",
@@ -95,7 +95,15 @@
                 }
             }
         ],
-        "o2m_tables": []
+        "o2m_tables": [{
+            "model_name": "eventdate",
+            "display_name": "event_date",
+            "fields": [
+                "id",
+                "date"
+            ],
+            "connected_field": "event_id"
+        }]
     },
     "article": {
         "model_name": "products",

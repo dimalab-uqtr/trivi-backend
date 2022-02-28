@@ -258,6 +258,97 @@
                 }
             ],
             "o2m_tables": []
+        },
+        "crawl_data": {
+            "model_name": "events",
+            "is_reformat": false,
+            "fields": {
+                "event_id": {
+                    "type": "string",
+                    "source_name": "id"
+                },
+                "event_name": {
+                    "type": "string",
+                    "source_name": "name"
+                },
+                "event_type": {
+                    "type": "string",
+                    "source_name": "type"
+                },
+                "slug": {
+                    "type": "string",
+                    "source_name": "slug"
+                },
+                "description": {
+                    "type": "string",
+                    "source_name": "description"
+                },
+                "img": {
+                    "type": "string",
+                    "source_name": "img"
+                },
+                "url": {
+                    "type": "string",
+                    "source_name": "href"
+                }
+            },
+            "m2m_tables": [
+                {
+                    "model_name": "geolocation",
+                    "display_name": "geolocation",
+                    "sources": [
+                        {
+                            "fields": {
+                                "location_name": {
+                                    "type": "string",
+                                    "source_name": "lieu"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "source_name": "street"
+                                },
+                                "city": {
+                                    "type": "string",
+                                    "source_name": "city"
+                                },
+                                "state": {
+                                    "type": "string",
+                                    "source_name": "region"
+                                },
+                                "country": {
+                                    "type": "string",
+                                    "source_name": "country"
+                                }
+                            },
+                            "connected_field1": "event_id",
+                            "connected_field2": "location_id",
+                            "connected_table": {
+                                "model_name": "eventlocation",
+                                "display_name": "",
+                                "fields": {}
+                            }
+                        }
+                    ]
+                }
+            ],
+            "o2m_tables": [
+                {
+                    "model_name": "eventdate",
+                    "display_name": "event_date",
+                    "sources": [
+                        {
+                            "connected_field": "event_id",
+                            "array": "list_dates",
+                            "fields": {
+                                "date": {
+                                    "type": "string",
+                                    "source_name": ""
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     },
     "article": {
@@ -291,6 +382,72 @@
                 }
             },
             "m2m_tables": [],
+            "o2m_tables": []
+        },
+
+        "crawl_data": {
+            "model_name": "products",
+            "is_reformat": false,
+            "fields": {
+                "product_id": {
+                    "type": "string",
+                    "source_name": "id"
+                },
+                "product_name": {
+                    "type": "string",
+                    "source_name": "name"
+                },
+                "description": {
+                    "type": "string",
+                    "source_name": "description"
+                },
+                "product_type": {
+                    "type": "string",
+                    "source_name": "type"
+                },
+                "img": {
+                    "type": "string",
+                    "source_name": "img"
+                },
+                "url": {
+                    "type": "string",
+                    "source_name": "href"
+                },
+                "slug": {
+                    "type": "string",
+                    "source_name": "slug"
+                }
+            },
+            "m2m_tables": [
+
+                {
+                    "model_name": "businessentity",
+                    "display_name": "businessentity",
+                    "sources": [
+                        {
+                            "array": "authors",
+                            "fields": {
+                                "entity_name": {
+                                    "type": "string",
+                                    "source_name": "author"
+                                }
+                            },
+                            "connected_field1": "product_id",
+                            "connected_field2": "entity_id",
+                            "connected_table": {
+                                "model_name": "entityproductrole",
+                                "display_name": "",
+                                "fields": {
+                                    "role_name": {
+                                        "type": "string",
+                                        "default": "author"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "o2m_tables": []
         }
     },
@@ -373,16 +530,20 @@
             ],
             "o2m_tables": [
                 {
-                    "model_name": "eventpreference",
-                    "display_name": "eventpreference",
+                    "model_name": "itempreference",
+                    "display_name": "itempreference",
                     "sources": [
                         {
                             "connected_field": "activity_id",
                             "array": "items",
                             "fields": {
-                                "event_id": {
+                                "item_id": {
                                     "type": "string",
                                     "source_name": "item_id"
+                                },
+                                "item_type": {
+                                    "type": "string",
+                                    "source_name": "item_category"
                                 }
                             }
                         }
