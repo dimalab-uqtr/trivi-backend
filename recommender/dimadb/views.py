@@ -474,7 +474,6 @@ def mapping_data(data, template):
                 for o2m_table in o2m_tables:
                     o2m_model_name = o2m_table['model_name']
                     sources = o2m_table['sources']
-
                     for source in sources:
                         o2m_objs = []
                         if 'array' not in source:
@@ -543,7 +542,6 @@ def import_json_file(request, item_type):
         files = request.FILES.getlist('files[]')
         file = files[0]
         json_data = json.load(file)
-
         # Get template configuration info
         template_type = request.POST.get('template')
         if (template_type is None or template_type == ''):

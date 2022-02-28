@@ -514,7 +514,7 @@
                                 },
                                 "country": {
                                     "type": "string",
-                                    "default": "geo.country"
+                                    "source_name": "geo.country"
                                 }
                             },
                             "connected_field1": "interaction_id",
