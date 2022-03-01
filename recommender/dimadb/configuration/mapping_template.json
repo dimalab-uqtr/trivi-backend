@@ -513,6 +513,14 @@
                 "event_name": {
                     "type": "string",
                     "source_name": "event_name"
+                },
+                "visitor_id": {
+                    "type": "string",
+                    "source_name": "user_id"
+                },
+                "traffic_source": {
+                    "type": "string",
+                    "source_name": "traffic_source.source"
                 }
             },
             "m2m_tables": [

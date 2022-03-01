@@ -506,7 +506,7 @@ def reformated_data(json_data, item_type, template_type):
         reformated_json_data = []
         # Each item type & each template type => reformat differently
         if (item_type == 'web-activity' and template_type == 'default'):
-            list_required_attributes = ['event_date', 'items', 'event_name', 'device', 'geo']
+            list_required_attributes = ['event_date', 'items', 'event_name', 'device', 'geo', 'user_id', 'traffic_source']
             list_required_event_params = ['ga_session_id', 'page_title', 'page_location']
             for obj in json_data:
                 new_obj = {}
@@ -659,9 +659,15 @@ def generate_recommend_api(level, item_type, recommend_type, quantity, domain, i
     return api
 
 
+recommend_display_fields = {
+            'events': ['event_id', 'event_name', 'event_type', 'next_date'],
+            'products': ['product_id', 'product_name', 'product_type']
+        }
+
 # Get upcoming recommendation
-def get_upcoming(table_name, display_fields, quantity=1, domain=None):
+def get_upcoming(table_name, quantity=1, domain=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
+    display_fields = recommend_display_fields[table_name]
     list_recommend_items = []
     filter_params = {}
 
@@ -700,8 +706,9 @@ def get_upcoming(table_name, display_fields, quantity=1, domain=None):
 
 
 # Get most popular recommendation
-def get_most_popular(table_name, display_fields, quantity=1, domain=None):
+def get_most_popular(table_name, quantity=1, domain=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
+    display_fields = recommend_display_fields[table_name]
     list_recommend_items = []
     filter_params = {}
 
@@ -767,14 +774,15 @@ def get_most_popular(table_name, display_fields, quantity=1, domain=None):
             list_recommend_items.append(recommend_item)
             
     if (len(list_recommend_items) == 0):
-        list_recommend_items = get_upcoming(table_name, display_fields, quantity)
+        list_recommend_items = get_upcoming(table_name, quantity)
 
     return list_recommend_items
 
 
 # Get similarity recommendation
-def get_similar(table_name, display_fields, quantity=1, item_id=None):
+def get_similar(table_name, quantity=1, item_id=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
+    display_fields = recommend_display_fields[table_name]
     list_similar_items = ContentBasedRecommender.recommend_items_by_items(table_name=table_name, items_id=item_id)
     list_recommend_items = []
     
@@ -795,17 +803,17 @@ def get_similar(table_name, display_fields, quantity=1, item_id=None):
             similar_obj = list_similar_items[i]
             obj = Model.objects.get(id=similar_obj['id'])
             obj = model_to_dict(obj)
-            obj['similarity'] = similar_obj['similarity']
             recommend_item = {}
             for field in list(display_fields):
                 recommend_item[field] = obj[field]
             if (table_name == 'events'):
-                recommend_item['location_name'] = get_location_name(obj['id'])
                 recommend_item['next_date'] = similar_obj['next_date']
+                recommend_item['location_name'] = get_location_name(obj['id'])
+                recommend_item['similarity'] = similar_obj['similarity']
             list_recommend_items.append(recommend_item)
             
     if (len(list_recommend_items) == 0):
-        list_recommend_items = get_upcoming(table_name, display_fields, quantity)
+        list_recommend_items = get_upcoming(table_name, quantity)
 
     return list_recommend_items
 
@@ -828,43 +836,30 @@ def get_location_name(event_id):
 # Get list of recommend items
 def get_recommend_items(level, item_type, recommend_type, quantity, domain, item_id):
     list_recommend_items = []
-    display_fields = {
-        'Upcoming': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date']
-        },
-        'Most popular': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date'],
-            'products': ['id', 'product_id', 'product_name', 'product_type']
-        },
-        'Similar': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date', 'similarity'],
-            'products': ['id', 'product_id', 'product_name', 'product_type', 'similarity'],
-        }
-    }
 
     if (level == 'Homepage'):
         if (recommend_type == 'Upcoming'):
             if (item_type == 'events'):
-                list_recommend_items = get_upcoming(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_upcoming(table_name=item_type, quantity=quantity)
         if (recommend_type == 'Most popular'):
             if (item_type == 'events'):
-                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_most_popular(table_name=item_type, quantity=quantity)
             elif (item_type == 'products'):
-                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_most_popular(table_name=item_type, quantity=quantity)
     elif (level == 'Domain'):
         if (recommend_type == 'Upcoming'):
             if (item_type == 'events'):
-                list_recommend_items = get_upcoming(table_name=item_type,display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_upcoming(table_name=item_type, quantity=quantity, domain=domain)
         if (recommend_type == 'Most popular'):
             if (item_type == 'events'):
-                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_most_popular(table_name=item_type, quantity=quantity, domain=domain)
             elif (item_type == 'products'):
-                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_most_popular(table_name=item_type, quantity=quantity, domain=domain)
     else:
         if (item_type == 'events'):
-            list_recommend_items = get_similar(table_name=item_type, display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_id=item_id)
         elif (item_type == 'products'):
-            list_recommend_items = get_similar(table_name=item_type, display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_id=item_id)
 
     return list_recommend_items
 
@@ -947,6 +942,12 @@ def train_similar_recommend(request):
 @api_view(['GET'])
 def get_recommend_info(request):
     try:
+        # Recommend info
+        recommend_levels = {
+            "Homepage": ["Upcoming", "Most popular"],
+            "Domain": ["Upcoming", "Most popular"],
+            "Item": ["Similar"]
+        }
         # Get list domain(item_type)
         event_snippets = Events.objects.all()
         event_serializer = EventSerializer(event_snippets, many=True)
@@ -957,11 +958,26 @@ def get_recommend_info(request):
         article_serializer = ArticleSerializer(article_snippets, many=True)
         article_types = Products.objects.values('product_type').distinct()
         article_types = [item['product_type'] for item in list(article_types)]
+        
+        list_item_infos = {
+            "events": {
+                "name": "Événements",
+                "items": event_serializer.data,
+                "types": event_types
+            },
+            "products": {
+                "name": "Articles",
+                "items": article_serializer.data,
+                "types": article_types
+            }    
+        }
 
         return Response({'events': event_serializer.data,
                          'products': article_serializer.data,
                          'eventTypes': event_types,
-                         'articleTypes': article_types}, status=status.HTTP_200_OK)
+                         'articleTypes': article_types,
+                         'recommendLevels': recommend_levels,
+                         'listItemInfos': list_item_infos}, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
 
