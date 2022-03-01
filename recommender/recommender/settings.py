@@ -37,7 +37,8 @@ SECRET_KEY = 'django-insecure-1mjh2nz%@#%6vh2$0q&a&6jgap@-e(f7wne#sdgb6jn3x+%vp(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = json.loads(env('ALLOWED_HOSTS'))
+CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -77,8 +78,6 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
     ),
 }
-
-CORS_ORIGIN_WHITELIST = json.loads(env('CORS_ORIGIN_WHITELIST'))
 
 ROOT_URLCONF = 'recommender.urls'
 
