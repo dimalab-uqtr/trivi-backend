@@ -61,7 +61,7 @@ function getListView(containerId, res) {
                         ${
                           itemType == "events"
                             ? `<div class="recommend-time">
-                            <div>${item.end_date ? item.end_date.substring(0, 10) + "-" + item.location_name : item.location_name}</div>
+                            <div>${item.next_date ? item.next_date.substring(0, 10) + "-" + item.location_name : item.location_name}</div>
                         </div>`
                             : ""
                         }

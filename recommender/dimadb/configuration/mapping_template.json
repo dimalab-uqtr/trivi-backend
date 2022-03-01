@@ -566,6 +566,10 @@
                                 "item_type": {
                                     "type": "string",
                                     "source_name": "item_category"
+                                },
+                                "activity_name": {
+                                    "type": "string",
+                                    "source_name": "item_eventname" 
                                 }
                             }
                         }

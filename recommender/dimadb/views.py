@@ -527,6 +527,9 @@ def reformated_data(json_data, item_type, template_type):
                                 new_obj[key] = values[value]
                             else:
                                 continue
+                            
+                for item in new_obj['items']:
+                    item['item_eventname'] = new_obj['event_name']
                 reformated_json_data.append(new_obj)
         return reformated_json_data
     except Exception as exception:
@@ -657,15 +660,10 @@ def generate_recommend_api(level, item_type, recommend_type, quantity, domain, i
 
 
 # Get upcoming recommendation
-def get_upcoming(table_name, sort_field, display_fields, quantity=1, domain=None):
+def get_upcoming(table_name, display_fields, quantity=1, domain=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
     list_recommend_items = []
     filter_params = {}
-
-    if (sort_field != ''):
-        today = datetime.today()
-        sort_field_name = sort_field + '__gte'
-        filter_params[sort_field_name] = today
 
     if (domain is not None):
         if (table_name == 'events'):
@@ -673,9 +671,21 @@ def get_upcoming(table_name, sort_field, display_fields, quantity=1, domain=None
         elif (table_name == 'products'):
             filter_params['product_type'] = domain
 
-    list_objs = Model.objects.filter(Q(**filter_params)).order_by(sort_field)
+    list_objs = Model.objects.filter(Q(**filter_params))
     list_objs = list(list_objs)
-
+    
+    if (table_name == 'events'):
+        list_filtered_obj = []
+        today = datetime.today()
+        EventDateModel = apps.get_model(app_label='dimadb', model_name='eventdate')
+        for obj in list_objs:
+            list_event_dates = EventDateModel.objects.filter(event_id=obj.id, date__gte=today).order_by('date')
+            list_event_dates = [model_to_dict(obj) for obj in list(list_event_dates)]
+            if (len(list_event_dates)):
+                obj.next_date = list_event_dates[0]['date']
+                list_filtered_obj.append(obj)
+        list_objs = sorted(list_filtered_obj, key=lambda x: x.next_date)
+        
     for i in range(0, int(quantity)):
         if (i < len(list_objs)):
             obj = model_to_dict(list_objs[i])
@@ -685,23 +695,15 @@ def get_upcoming(table_name, sort_field, display_fields, quantity=1, domain=None
             if (table_name == 'events'):
                 recommend_item['location_name'] = get_location_name(obj['id'])
             list_recommend_items.append(recommend_item)
-            
-    if (len(list_recommend_items) == 0):
-        list_recommend_items = get_random(table_name, sort_field, display_fields, quantity)
 
     return list_recommend_items
 
 
 # Get most popular recommendation
-def get_most_popular(table_name, sort_field, display_fields, quantity=1, domain=None):
+def get_most_popular(table_name, display_fields, quantity=1, domain=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
     list_recommend_items = []
     filter_params = {}
-
-    if (sort_field != ''):
-        today = datetime.today()
-        sort_field_name = sort_field + '__gte'
-        filter_params[sort_field_name] = today
 
     if (domain is not None):
         if (table_name == 'events'):
@@ -710,57 +712,83 @@ def get_most_popular(table_name, sort_field, display_fields, quantity=1, domain=
             filter_params['product_type'] = domain
 
     list_objs = Model.objects.filter(Q(**filter_params))
-    list_objs = [model_to_dict(obj) for obj in list(list_objs)]
-    list_new_objs = []
+    list_objs = list(list_objs)
+    
+    if (table_name == 'events'):
+        list_filtered_obj = []
+        today = datetime.today()
+        EventDateModel = apps.get_model(app_label='dimadb', model_name='eventdate')
+        for obj in list_objs:
+            list_event_dates = EventDateModel.objects.filter(event_id=obj.id, date__gte=today).order_by('date')
+            list_event_dates = [model_to_dict(obj) for obj in list(list_event_dates)]
+            if (len(list_event_dates)):
+                obj.next_date = list_event_dates[0]['date']
+                list_filtered_obj.append(obj)
+        list_objs = sorted(list_filtered_obj, key=lambda x: x.next_date)
+        
+    list_objs = [model_to_dict(obj) for obj in list_objs]
+    list_item_activities = []
+    if (table_name == 'events'):
+        list_objs_id = [obj['event_id'] for obj in list_objs]
+        list_item_activities = ItemPreference.objects.filter(item_type='event', item_id__in=list_objs_id).values('item_id', 'activity_name').annotate(sum=Count('id'))
+    elif (table_name == 'products'):
+        list_objs_id = [obj['product_id'] for obj in list_objs]
+        list_item_activities = ItemPreference.objects.filter(item_type='product', item_id__in=list_objs_id).values('item_id', 'activity_name').annotate(sum=Count('id'))
 
-    for obj in list_objs:
-        obj['score'] = 0  # Most popular score
-        list_item_activities = []
+    list_item_scores = {}
+    for item_activity in list_item_activities:
+        try:
+            item_id = item_activity['item_id']
+            list_item_scores[item_id] = 0
+            activity_name = item_activity['activity_name']
+            count = item_activity['sum']
+            activity_weight = model_to_dict(WebActivityType.objects.get(name=activity_name))
+            list_item_scores[item_id] += count * activity_weight['value']
+        except:
+            pass
+    
+    list_item_scores = [{'item_id': item, 'score': list_item_scores[item]} for item in list_item_scores]
+    list_item_scores = sorted(list_item_scores, key=lambda d: d['score'], reverse=True)
 
-        # Find web activities that contain this item
-        if (table_name == 'events'):
-            list_item_activities = ItemPreference.objects.filter(item_id=obj['event_id'], item_type='event')
-        elif (table_name == 'products'):
-            list_item_activities = ItemPreference.objects.filter(item_id=obj['product_id'], item_type='product')
-
-        # For each web activity, find important weight of web activity type
-        for item_activity in list(list_item_activities):
-            item_activity = model_to_dict(item_activity)
-            try:
-                activity = Interaction.objects.get(id=item_activity['activity_id'])
-                activity_type = model_to_dict(activity)
-                activity_type = activity_type['event_name']
-                try:
-                    activity_weight = WebActivityType.objects.get(name=activity_type)
-                    obj['score'] = obj['score'] + model_to_dict(activity_weight)['value']
-                except:
-                    pass
-            except:
-                pass
-        list_new_objs.append(obj)
-
-    list_new_objs = sorted(list_new_objs, key=lambda d: d['score'], reverse=True)
     for i in range(0, int(quantity)):
-        if (i < len(list_new_objs)):
-            obj = list_new_objs[i]
+        if (i < len(list_item_scores)):
+            item = list_item_scores[i]
+            obj = {}
+            if (table_name == 'events'):
+                obj = model_to_dict(Model.objects.get(event_id=item['item_id']))
+            else:
+                obj = model_to_dict(Model.objects.get(product_id=item['item_id']))
             recommend_item = {}
             for field in list(display_fields):
                 recommend_item[field] = obj[field]
             if (table_name == 'events'):
                 recommend_item['location_name'] = get_location_name(obj['id'])
+            recommend_item['score'] = item['score']
             list_recommend_items.append(recommend_item)
             
     if (len(list_recommend_items) == 0):
-        list_recommend_items = get_random(table_name, sort_field, display_fields, quantity)
+        list_recommend_items = get_upcoming(table_name, display_fields, quantity)
 
     return list_recommend_items
 
 
 # Get similarity recommendation
-def get_similar(table_name, sort_field, display_fields, quantity=1, item_id=None):
+def get_similar(table_name, display_fields, quantity=1, item_id=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
     list_similar_items = ContentBasedRecommender.recommend_items_by_items(table_name=table_name, items_id=item_id)
     list_recommend_items = []
+    
+    if (table_name == 'events'):
+        list_filtered_obj = []
+        today = datetime.today()
+        EventDateModel = apps.get_model(app_label='dimadb', model_name='eventdate')
+        for obj in list_similar_items:
+            list_event_dates = EventDateModel.objects.filter(event_id=obj['id'], date__gte=today).order_by('date')
+            list_event_dates = [model_to_dict(obj) for obj in list(list_event_dates)]
+            if (len(list_event_dates)):
+                obj['next_date'] = list_event_dates[0]['date']
+                list_filtered_obj.append(obj)
+        list_similar_items = list_filtered_obj
 
     for i in range(0, int(quantity)):
         if (i < len(list_similar_items)):
@@ -773,46 +801,14 @@ def get_similar(table_name, sort_field, display_fields, quantity=1, item_id=None
                 recommend_item[field] = obj[field]
             if (table_name == 'events'):
                 recommend_item['location_name'] = get_location_name(obj['id'])
+                recommend_item['next_date'] = similar_obj['next_date']
             list_recommend_items.append(recommend_item)
             
     if (len(list_recommend_items) == 0):
-        list_recommend_items = get_random(table_name, sort_field, display_fields, quantity)
+        list_recommend_items = get_upcoming(table_name, display_fields, quantity)
 
     return list_recommend_items
 
-
-# Get random recommendation
-def get_random(table_name, sort_field, display_fields, quantity):
-    Model = apps.get_model(app_label='dimadb', model_name=table_name)
-    list_recommend_items = []
-    filter_params = {}
-
-    if (sort_field != ''):
-        today = datetime.today()
-        sort_field_name = sort_field + '__gte'
-        filter_params[sort_field_name] = today
-
-    if (sort_field != ''):
-        list_objs = Model.objects.filter(Q(**filter_params)).order_by(sort_field)
-    else:
-        list_objs = Model.objects.all()
-        
-    list_objs = list(list_objs)
-
-    for i in range(0, int(quantity)):
-        if (i < len(list_objs)):
-            obj = model_to_dict(list_objs[i])
-            recommend_item = {}
-            for field in list(display_fields):
-                if (field in obj):
-                    recommend_item[field] = obj[field]
-                else:
-                    recommend_item[field] = 0
-            if (table_name == 'events'):
-                recommend_item['location_name'] = get_location_name(obj['id'])
-            list_recommend_items.append(recommend_item)
-
-    return list_recommend_items
 
 # Get location name of event
 def get_location_name(event_id):
@@ -834,41 +830,41 @@ def get_recommend_items(level, item_type, recommend_type, quantity, domain, item
     list_recommend_items = []
     display_fields = {
         'Upcoming': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date', 'end_date', 'description', "img", "url"]
+            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date']
         },
         'Most popular': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date', 'end_date', 'score', 'description', "img", "url"],
-            'products': ['id', 'product_id', 'product_name', 'product_type', 'score', 'description', "img", "url"]
+            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date'],
+            'products': ['id', 'product_id', 'product_name', 'product_type']
         },
         'Similar': {
-            'events': ['id', 'event_id', 'event_name', 'event_type', 'end_date', 'next_date', 'similarity', 'description', "img", "url"],
-            'products': ['id', 'product_id', 'product_name', 'product_type', 'similarity', 'description', "img", "url"],
+            'events': ['id', 'event_id', 'event_name', 'event_type', 'next_date', 'similarity'],
+            'products': ['id', 'product_id', 'product_name', 'product_type', 'similarity'],
         }
     }
 
     if (level == 'Homepage'):
         if (recommend_type == 'Upcoming'):
             if (item_type == 'events'):
-                list_recommend_items = get_upcoming(table_name=item_type, sort_field='end_date', display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_upcoming(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
         if (recommend_type == 'Most popular'):
             if (item_type == 'events'):
-                list_recommend_items = get_most_popular(table_name=item_type, sort_field='end_date', display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
             elif (item_type == 'products'):
-                list_recommend_items = get_most_popular(table_name=item_type, sort_field='', display_fields=display_fields[recommend_type][item_type], quantity=quantity)
+                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity)
     elif (level == 'Domain'):
         if (recommend_type == 'Upcoming'):
             if (item_type == 'events'):
-                list_recommend_items = get_upcoming(table_name=item_type, sort_field='end_date',display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_upcoming(table_name=item_type,display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
         if (recommend_type == 'Most popular'):
             if (item_type == 'events'):
-                list_recommend_items = get_most_popular(table_name=item_type, sort_field='end_date', display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
             elif (item_type == 'products'):
-                list_recommend_items = get_most_popular(table_name=item_type, sort_field='', display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
+                list_recommend_items = get_most_popular(table_name=item_type, display_fields=display_fields[recommend_type][item_type], quantity=quantity, domain=domain)
     else:
         if (item_type == 'events'):
-            list_recommend_items = get_similar(table_name=item_type, sort_field='end_date', display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
         elif (item_type == 'products'):
-            list_recommend_items = get_similar(table_name=item_type, sort_field='', display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, display_fields=display_fields['Similar'][item_type], quantity=quantity, item_id=item_id)
 
     return list_recommend_items
 

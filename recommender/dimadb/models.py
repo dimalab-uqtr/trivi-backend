@@ -268,6 +268,7 @@ class ItemPreference(models.Model):
     item_id = models.CharField(max_length=50, null=True, blank=True)
     item_type = models.CharField(max_length=50, null=True, blank=True)
     activity_id = models.CharField(max_length=50, null=True, blank=True)
+    activity_name = models.CharField(max_length=50, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
 
 
