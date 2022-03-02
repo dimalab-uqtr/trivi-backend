@@ -267,8 +267,8 @@ class ItemPreference(models.Model):
     preference_value = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     item_id = models.CharField(max_length=50, null=True, blank=True)
     item_type = models.CharField(max_length=50, null=True, blank=True)
-    activity_id = models.CharField(max_length=50, null=True, blank=True)
-    activity_name = models.CharField(max_length=50, null=True, blank=True)
+    interaction_id = models.CharField(max_length=50, null=True, blank=True)
+    interaction_event_name = models.CharField(max_length=50, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
 
 
@@ -329,7 +329,8 @@ class Interaction(models.Model):
     journey_id = models.CharField(max_length=50, null=True, blank=True)
     visitor_id = models.CharField(max_length=50, null=True, blank=True)
     customer_id = models.CharField(max_length=50, null=True, blank=True)
-    visit_date = models.DateTimeField(null=True, blank=True)
+    visit_date = models.DateField(null=True, blank=True)
+    visit_timestamp = models.IntegerField(null=True, blank=True)
     operating_system = models.CharField(max_length=150, null=True, blank=True)
     device_category = models.CharField(max_length=150, null=True, blank=True)
     device_brand = models.CharField(max_length=150, null=True, blank=True)
@@ -339,7 +340,6 @@ class Interaction(models.Model):
     page_location = models.CharField(max_length=150, null=True, blank=True)
     traffic_source = models.CharField(max_length=150, null=True, blank=True)
     event_name = models.CharField(max_length=150, null=True, blank=True)
-    activity_id = models.CharField(max_length=50, null=True, blank=True)
     interaction_number = models.IntegerField(null=True, blank=True)
     is_entrance = models.CharField(
         max_length=10, choices=(('True', True), ('False', False)), null=True, blank=True)

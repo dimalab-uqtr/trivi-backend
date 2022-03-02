@@ -507,15 +507,17 @@ def reformated_data(json_data, item_type, template_type):
         reformated_json_data = []
         # Each item type & each template type => reformat differently
         if (item_type == 'web-activity' and template_type == 'default'):
-            list_required_attributes = ['event_date', 'items', 'event_name', 'device', 'geo', 'user_id', 'traffic_source']
+            list_required_attributes = ['event_date', 'event_timestamp', 'items', 'event_name', 'device', 'geo', 'user_id', 'traffic_source']
             list_required_event_params = ['ga_session_id', 'page_title', 'page_location']
             for obj in json_data:
                 new_obj = {}
                 for attribute in list_required_attributes:
                     if attribute == 'event_date':
-                        date = pydash.get(obj, 'event_timestamp')
-                        new_obj[attribute] = datetime.fromtimestamp(int(date))
-                        print(datetime.fromtimestamp(int(date)))
+                        date = pydash.get(obj, attribute)
+                        format_date = date[:4] + '-' + date[4:6] + '-' + date[6:8]
+                        new_obj[attribute] = format_date
+                    elif attribute == 'event_timestamp':
+                        new_obj[attribute] = int(pydash.get(obj, attribute))
                     else:
                         new_obj[attribute] = pydash.get(obj, attribute)
 
@@ -738,19 +740,19 @@ def get_most_popular(table_name, quantity=1, domain=None):
     list_item_activities = []
     if (table_name == 'events'):
         list_objs_id = [obj['event_id'] for obj in list_objs]
-        list_item_activities = ItemPreference.objects.filter(item_type='event', item_id__in=list_objs_id).values('item_id', 'activity_name').annotate(sum=Count('id'))
+        list_item_activities = ItemPreference.objects.filter(item_type='event', item_id__in=list_objs_id).values('item_id', 'interaction_event_name').annotate(sum=Count('id'))
     elif (table_name == 'products'):
         list_objs_id = [obj['product_id'] for obj in list_objs]
-        list_item_activities = ItemPreference.objects.filter(item_type='product', item_id__in=list_objs_id).values('item_id', 'activity_name').annotate(sum=Count('id'))
+        list_item_activities = ItemPreference.objects.filter(item_type='product', item_id__in=list_objs_id).values('item_id', 'interaction_event_name').annotate(sum=Count('id'))
 
     list_item_scores = {}
     for item_activity in list_item_activities:
         try:
             item_id = item_activity['item_id']
             list_item_scores[item_id] = 0
-            activity_name = item_activity['activity_name']
+            interaction_event_name = item_activity['interaction_event_name']
             count = item_activity['sum']
-            activity_weight = model_to_dict(WebActivityType.objects.get(name=activity_name))
+            activity_weight = model_to_dict(WebActivityType.objects.get(name=interaction_event_name))
             list_item_scores[item_id] += count * activity_weight['value']
         except:
             pass
