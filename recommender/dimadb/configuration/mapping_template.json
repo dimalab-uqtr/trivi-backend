@@ -514,7 +514,7 @@
                     "type": "string",
                     "source_name": "event_name"
                 },
-                "visitor_id": {
+                "customer_id": {
                     "type": "string",
                     "source_name": "user_id"
                 },

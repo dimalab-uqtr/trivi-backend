@@ -513,9 +513,9 @@ def reformated_data(json_data, item_type, template_type):
                 new_obj = {}
                 for attribute in list_required_attributes:
                     if attribute == 'event_date':
-                        date = pydash.get(obj, attribute)
-                        format_date = date[:4] + '-' + date[4:6] + '-' + date[6:8]
-                        new_obj[attribute] = format_date
+                        date = pydash.get(obj, 'event_timestamp')
+                        new_obj[attribute] = datetime.fromtimestamp(int(date))
+                        print(datetime.fromtimestamp(int(date)))
                     else:
                         new_obj[attribute] = pydash.get(obj, attribute)
 
