@@ -407,97 +407,98 @@ def create_connected_object(form_info, connected_field1_id, connected_field2_id)
 
 #Mapping data in file with data model
 def mapping_data(data, template):
-    total = 0   # Total object rows in imported data
-    count = 0   # Total object rows saved in database
-    if isinstance(data, list):
-        total = len(data)
-        # Store history of import
-        import_info = ImportInfo(table_name=template['model_name'])
-        import_info.save()
-        
-        # Get info from schema_detail
-        model_name = template['model_name']
-        fields = template['fields']
-        m2m_tables = []
-        o2m_tables = []
-        if ('m2m_tables' in template.keys()):
-            m2m_tables = template['m2m_tables']
-        if ('o2m_tables' in template.keys()):
-            o2m_tables = template['o2m_tables']
+    try:
+        total = 0   # Total object rows in imported data
+        count = 0   # Total object rows saved in database
+        if isinstance(data, list):
+            total = len(data)
+            # Store history of import
+            import_info = ImportInfo(table_name=template['model_name'])
+            import_info.save()
+            
+            # Get info from schema_detail
+            model_name = template['model_name']
+            fields = template['fields']
+            m2m_tables = []
+            o2m_tables = []
+            if ('m2m_tables' in template.keys()):
+                m2m_tables = template['m2m_tables']
+            if ('o2m_tables' in template.keys()):
+                o2m_tables = template['o2m_tables']
 
-        #Mapping
-        for obj in data:
-            obj_info = filter_imported_object_info(fields, obj)
-            if obj_info:
-                # Store obj in primary table
-                obj_info['import_id'] = import_info.id
-                Model = apps.get_model(app_label='dimadb', model_name=model_name)
-                new_obj = Model(**obj_info)
-                new_obj.save()
-                # Store additional objs in m2m tables
-                for m2m_table in m2m_tables:
-                    m2m_model_name = m2m_table['model_name']
-                    m2m_sources = m2m_table['sources']
+            #Mapping
+            for obj in data:
+                obj_info = filter_imported_object_info(fields, obj)
+                if obj_info:
+                    # Store obj in primary table
+                    obj_info['import_id'] = import_info.id
+                    Model = apps.get_model(app_label='dimadb', model_name=model_name)
+                    new_obj = Model(**obj_info)
+                    new_obj.save()
+                    # Store additional objs in m2m tables
+                    for m2m_table in m2m_tables:
+                        m2m_model_name = m2m_table['model_name']
+                        m2m_sources = m2m_table['sources']
 
-                    for source in m2m_sources:
-                        m2m_objs = []
-                        if 'array' not in source:
-                            m2m_objs.append(obj)
-                        else:
-                            if (pydash.get(obj, source['array'])):
-                                m2m_objs = pydash.get(obj, source['array'])
+                        for source in m2m_sources:
+                            m2m_objs = []
+                            if 'array' not in source:
+                                m2m_objs.append(obj)
+                            else:
+                                if (pydash.get(obj, source['array'])):
+                                    m2m_objs = pydash.get(obj, source['array'])
 
-                        for m2m_obj in m2m_objs:
-                            m2m_obj_info = filter_imported_object_info(source['fields'], m2m_obj)
-                            if (m2m_obj_info):
-                                m2m_obj_info['import_id'] = import_info.id
-                                M2MModel = apps.get_model(app_label='dimadb', model_name=m2m_model_name)
-                                new_m2m_obj = M2MModel(**m2m_obj_info)
-                                new_m2m_obj.save()
+                            for m2m_obj in m2m_objs:
+                                m2m_obj_info = filter_imported_object_info(source['fields'], m2m_obj)
+                                if (m2m_obj_info):
+                                    m2m_obj_info['import_id'] = import_info.id
+                                    M2MModel = apps.get_model(app_label='dimadb', model_name=m2m_model_name)
+                                    new_m2m_obj = M2MModel(**m2m_obj_info)
+                                    new_m2m_obj.save()
 
-                                # Store obj in connected table
-                                # Read configure info
-                                connected_table = source['connected_table']
-                                connected_field1 = source['connected_field1']
-                                connected_field2 = source['connected_field2']
-                                connected_model_name = connected_table['model_name']
+                                    # Store obj in connected table
+                                    # Read configure info
+                                    connected_table = source['connected_table']
+                                    connected_field1 = source['connected_field1']
+                                    connected_field2 = source['connected_field2']
+                                    connected_model_name = connected_table['model_name']
 
-                                connected_obj_info = filter_imported_object_info(connected_table['fields'], m2m_obj)
-                                connected_obj_info[connected_field1] = new_obj.id
-                                connected_obj_info[connected_field2] = new_m2m_obj.id
-                                connected_obj_info['import_id'] = import_info.id
-                                ConnectedModel = apps.get_model(app_label='dimadb', model_name=connected_model_name)
-                                new_connected_obj = ConnectedModel(**connected_obj_info)
-                                new_connected_obj.save()
+                                    connected_obj_info = filter_imported_object_info(connected_table['fields'], m2m_obj)
+                                    connected_obj_info[connected_field1] = new_obj.id
+                                    connected_obj_info[connected_field2] = new_m2m_obj.id
+                                    connected_obj_info['import_id'] = import_info.id
+                                    ConnectedModel = apps.get_model(app_label='dimadb', model_name=connected_model_name)
+                                    new_connected_obj = ConnectedModel(**connected_obj_info)
+                                    new_connected_obj.save()
 
-                # Store additional objs in o2m tables
-                for o2m_table in o2m_tables:
-                    o2m_model_name = o2m_table['model_name']
-                    sources = o2m_table['sources']
-                    for source in sources:
-                        o2m_objs = []
-                        if 'array' not in source:
-                            o2m_objs.append(obj)
-                        else:
-                            if (pydash.get(obj, source['array'])):
-                                o2m_objs = pydash.get(obj, source['array'])
+                    # Store additional objs in o2m tables
+                    for o2m_table in o2m_tables:
+                        o2m_model_name = o2m_table['model_name']
+                        sources = o2m_table['sources']
+                        for source in sources:
+                            o2m_objs = []
+                            if 'array' not in source:
+                                o2m_objs.append(obj)
+                            else:
+                                if (pydash.get(obj, source['array'])):
+                                    o2m_objs = pydash.get(obj, source['array'])
 
-                        for o2m_obj in o2m_objs:
-                            o2m_obj_info = filter_imported_object_info(source['fields'], o2m_obj)
-                            if (o2m_obj_info):
-                                connected_field = source['connected_field']
-                                o2m_obj_info[connected_field] = new_obj.id
-                                o2m_obj_info['import_id'] = import_info.id
-                                O2MModel = apps.get_model(app_label='dimadb', model_name=o2m_model_name)
-                                new_o2m_obj = O2MModel(**o2m_obj_info)
-                                new_o2m_obj.save()
+                            for o2m_obj in o2m_objs:
+                                o2m_obj_info = filter_imported_object_info(source['fields'], o2m_obj)
+                                if (o2m_obj_info):
+                                    connected_field = source['connected_field']
+                                    o2m_obj_info[connected_field] = new_obj.id
+                                    o2m_obj_info['import_id'] = import_info.id
+                                    O2MModel = apps.get_model(app_label='dimadb', model_name=o2m_model_name)
+                                    new_o2m_obj = O2MModel(**o2m_obj_info)
+                                    new_o2m_obj.save()
 
-            count += 1
-        return {'message': 'Import successfully' + '.\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
-    else:
-        return {'message': 'Wrong json format'}
-    # except Exception as error:
-    #     return {'message':  'There is an error(duplication, ...).\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
+                count += 1
+            return {'message': 'Import successfully' + '.\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
+        else:
+            return {'message': 'Wrong json format'}
+    except Exception as error:
+        return {'message':  'There is an error(duplication, ...).\n' + 'Import ' + str(count) + '/' + str(total) + 'object(s).'}
 
 
 # Some imported json file required to be reformated before mapping
