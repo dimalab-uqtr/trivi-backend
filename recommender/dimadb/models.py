@@ -307,8 +307,7 @@ class Customer(models.Model):
     contact_id = models.CharField(max_length=50, null=True, blank=True)
     location_id = models.CharField(max_length=50, null=True, blank=True)
     dob = models.DateTimeField(null=True, blank=True)
-    first_name = models.CharField(max_length=50, null=True, blank=True)
-    last_name = models.CharField(max_length=50, null=True, blank=True)
+    name = models.CharField(max_length=50, null=True, blank=True)
     gender = models.CharField(max_length=10, choices=(
         ('male', 'male'), ('female', 'female')), default='event')
     import_id = models.CharField(max_length=30, null=True, blank=True)
