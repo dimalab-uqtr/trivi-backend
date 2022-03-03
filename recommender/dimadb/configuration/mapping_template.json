@@ -486,6 +486,10 @@
                     "type": "string",
                     "source_name": "event_date"
                 },
+                "visit_timestamp": {
+                    "type": "string",
+                    "source_name": "event_timestamp"
+                },
                 "operating_system": {
                     "type": "string",
                     "source_name": "device.operating_system"
@@ -514,7 +518,7 @@
                     "type": "string",
                     "source_name": "event_name"
                 },
-                "visitor_id": {
+                "customer_id": {
                     "type": "string",
                     "source_name": "user_id"
                 },
@@ -564,7 +568,7 @@
                     "display_name": "itempreference",
                     "sources": [
                         {
-                            "connected_field": "activity_id",
+                            "connected_field": "interaction_id",
                             "array": "items",
                             "fields": {
                                 "item_id": {
@@ -575,7 +579,7 @@
                                     "type": "string",
                                     "source_name": "item_category"
                                 },
-                                "activity_name": {
+                                "interaction_event_name": {
                                     "type": "string",
                                     "source_name": "item_eventname" 
                                 }

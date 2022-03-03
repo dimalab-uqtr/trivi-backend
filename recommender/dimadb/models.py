@@ -267,8 +267,8 @@ class ItemPreference(models.Model):
     preference_value = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     item_id = models.CharField(max_length=50, null=True, blank=True)
     item_type = models.CharField(max_length=50, null=True, blank=True)
-    activity_id = models.CharField(max_length=50, null=True, blank=True)
-    activity_name = models.CharField(max_length=50, null=True, blank=True)
+    interaction_id = models.CharField(max_length=50, null=True, blank=True)
+    interaction_event_name = models.CharField(max_length=50, null=True, blank=True)
     import_id = models.CharField(max_length=30, null=True, blank=True)
 
 
@@ -305,18 +305,9 @@ class Customer(models.Model):
     customer_id = models.CharField(max_length=50, null=True, blank=True)
     ip_address = models.CharField(max_length=50, null=True, blank=True)
     contact_id = models.CharField(max_length=50, null=True, blank=True)
-    profile_id = models.CharField(max_length=50, null=True, blank=True)
     location_id = models.CharField(max_length=50, null=True, blank=True)
-    import_id = models.CharField(max_length=30, null=True, blank=True)
-
-# Profile
-
-class ProfileCustomer(models.Model):
-    id = models.AutoField(primary_key=True)
-    profile_id = models.CharField(max_length=50, null=True, blank=True)
-    first_name = models.CharField(max_length=50, null=True, blank=True)
-    last_name = models.CharField(max_length=50, null=True, blank=True)
-    age = models.IntegerField(null=True)
+    dob = models.DateTimeField(null=True, blank=True)
+    name = models.CharField(max_length=50, null=True, blank=True)
     gender = models.CharField(max_length=10, choices=(
         ('male', 'male'), ('female', 'female')), default='event')
     import_id = models.CharField(max_length=30, null=True, blank=True)
@@ -338,6 +329,7 @@ class Interaction(models.Model):
     visitor_id = models.CharField(max_length=50, null=True, blank=True)
     customer_id = models.CharField(max_length=50, null=True, blank=True)
     visit_date = models.DateField(null=True, blank=True)
+    visit_timestamp = models.IntegerField(null=True, blank=True)
     operating_system = models.CharField(max_length=150, null=True, blank=True)
     device_category = models.CharField(max_length=150, null=True, blank=True)
     device_brand = models.CharField(max_length=150, null=True, blank=True)
@@ -347,7 +339,6 @@ class Interaction(models.Model):
     page_location = models.CharField(max_length=150, null=True, blank=True)
     traffic_source = models.CharField(max_length=150, null=True, blank=True)
     event_name = models.CharField(max_length=150, null=True, blank=True)
-    activity_id = models.CharField(max_length=50, null=True, blank=True)
     interaction_number = models.IntegerField(null=True, blank=True)
     is_entrance = models.CharField(
         max_length=10, choices=(('True', True), ('False', False)), null=True, blank=True)
