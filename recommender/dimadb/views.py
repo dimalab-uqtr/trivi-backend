@@ -663,8 +663,8 @@ def generate_recommend_api(level, item_type, recommend_type, quantity, domain, i
 
 
 recommend_display_fields = {
-            'events': ['event_id', 'event_name', 'event_type', 'next_date'],
-            'products': ['product_id', 'product_name', 'product_type']
+            'events': ['event_id', 'event_name', 'event_type', 'next_date', 'url', 'img'],
+            'products': ['product_id', 'product_name', 'product_type', 'url', 'img']
         }
 
 # Get upcoming recommendation
@@ -889,7 +889,8 @@ def get_list_recommend(request):
     except Exception as error:
         return Response({'message': error})
 
-def get_embedded_link(api):
+def get_embedded_link(api, is_gui=False):
+    embedded_link = ''
     css_link = '<link rel="stylesheet" href="' + IP_DOMAIN + '/static/dimadb/css/recommender.css">'
     div_link = '<div id="' + 'recommendItem' + '"></div>'
     js_link = '<script src="' + IP_DOMAIN + '/static/dimadb/js/recommender.js' + '"></script>'
@@ -897,14 +898,20 @@ def get_embedded_link(api):
     recommend_link += '\tconst recommendItems = getRecommend("' + api + '", "' + API_KEY + '");' + '\n'
     recommend_link += '\trecommendItems.then(res => {' + '\n'
     recommend_link += '\t\t//Handle recommend items here' + '\n'
-    recommend_link += '\t\t//Uncomment below code if we need to show view results' + '\n'
-    recommend_link += '\t\t//console.log(res);' + '\n'
-    recommend_link += '\t\t//Uncomment below code if we need to show recommendation UI' + '\n'
-    recommend_link += '\t\t//getListView("recommendItem", res);' + '\n'
+    if (is_gui):
+        recommend_link += '\t\t//Below code shows recommendation GUI' + '\n'
+        recommend_link += '\t\tgetListView("recommendItem", res);' + '\n'
+    else:
+        recommend_link += '\t\t//Below code shows recommendation results' + '\n'
+        recommend_link += '\t\tconsole.log(res);' + '\n'
     recommend_link += '\t});' + '\n'
     recommend_link += '</script>'
     
-    embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
+    if (is_gui):
+        embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
+    else:
+        embedded_link = js_link + '\n' + recommend_link
+        
     return embedded_link
 
 @api_view(['POST'])
@@ -921,8 +928,9 @@ def get_recommend_api(request):
         #Get recommend api + recommend list
         api = generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_id)
         list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_id)
-        embedded_link = get_embedded_link(api)
-        return Response({'items': list_recommend_items, 'api': api, 'apiKey': API_KEY, 'embeddedLink': embedded_link}, status=status.HTTP_200_OK)
+        embedded_link_not_gui = get_embedded_link(api, is_gui=False)
+        embedded_link_gui = get_embedded_link(api, is_gui=True)
+        return Response({'items': list_recommend_items, 'api': api, 'apiKey': API_KEY, 'embeddedLinkNotGui': embedded_link_not_gui, 'embeddedLinkGui': embedded_link_gui}, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
 
