@@ -589,5 +589,49 @@
                 }
             ]
         }
+    },
+    "google-analytic": {
+        "default": {
+            "model_name": "googleanalyticreports",
+            "is_reformat": true,
+            "fields": {
+                "event_count": {
+                    "type": "int",
+                    "source_name": "eventCount"
+                },
+                "session_count": {
+                    "type": "int",
+                    "source_name": "sessions"
+                },
+                "date": {
+                    "type": "string",
+                    "source_name": "date"
+                },
+                "operating_system": {
+                    "type": "string",
+                    "source_name": "operatingSystem"
+                },
+                "device_category": {
+                    "type": "string",
+                    "source_name": "deviceCategory"
+                },
+                "country": {
+                    "type": "string",
+                    "source_name": "country"
+                },
+                "browser": {
+                    "type": "string",
+                    "source_name": "browser"
+                },
+                "page_location": {
+                    "type": "string",
+                    "source_name": "pageLocation"
+                },
+                "event_name": {
+                    "type": "string",
+                    "source_name": "eventName"
+                }
+            }
+        }
     }
 }

@@ -400,6 +400,20 @@ class WebActivity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     browser = models.CharField(max_length=80, null=True)
     visitor = models.CharField(max_length=20)
-
     activity_type = models.ForeignKey(
         WebActivityType, on_delete=models.CASCADE)
+    
+    
+#WebActivities:
+class GoogleAnalyticReports(models.Model):
+    id = models.AutoField(primary_key=True)
+    date = models.DateField(null=True, blank=True)
+    event_name = models.CharField(max_length=50, null=True, blank=True)
+    page_location = models.CharField(max_length=150, null=True, blank=True)
+    operating_system = models.CharField(max_length=150, null=True, blank=True)
+    device_category = models.CharField(max_length=150, null=True, blank=True)
+    country = models.CharField(max_length=150, null=True, blank=True)
+    browser = models.CharField(max_length=150, null=True, blank=True)
+    event_count = models.IntegerField(null=True, blank=True)
+    session_count = models.IntegerField(null=True, blank=True)
+    import_id = models.CharField(max_length=30, null=True, blank=True)
