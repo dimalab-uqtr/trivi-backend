@@ -6,16 +6,16 @@
     },
     "article": {
         "model_name": "products",
-        "fields": ["id", "product_id", "product_name", "product_type", "status"],
+        "fields": ["id", "product_id", "product_name", "product_type", "url", "status"],
         "view_detail": true
     },
     "web-activity": {
-        "model_name": "interaction",
-        "fields": ["id", "interaction_id", "session_id", "visit_date", "event_name", "operating_system", "device_category", "device_brand", "browser", "page_title", "page_location"],
+        "model_name": "interaction_f",
+        "fields": ["id", "session_id", "visit_date", "event_name", "page_title", "page_location", "operating_system", "device_category", "browser"],
         "view_detail": false
     },
     "google-analytic-report": {
-        "model_name": "googleanalyticreports",
+        "model_name": "interaction_ga",
         "fields": ["id", "date", "event_name", "page_location", "country", "browser", "device_category", "operating_system", "event_count", "session_count"],
         "view_detail": false
     }
