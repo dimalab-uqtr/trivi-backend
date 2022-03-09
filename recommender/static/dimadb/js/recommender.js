@@ -306,7 +306,7 @@ function getListViews(recommendations) {
         } else if (recommendType == "Upcoming") {
           title += " à venir";
         } else {
-          title += " connexes";
+          title += " similaires";
         }
         var recommendDivId = `recommendation-${idx}`
         document.getElementById("recommendations").innerHTML+= `<div id=${recommendDivId}></div>`
