@@ -55,3 +55,6 @@ django-environ
 google-api-python-client
 google-analytics-data
 oauth2client
+google-api-core
+grpcio
+python-dotenv
