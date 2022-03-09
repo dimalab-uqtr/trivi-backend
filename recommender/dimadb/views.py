@@ -63,17 +63,22 @@ def home(request):
         # Total number of web activities (interactions)
         web_activities_file = len(Interaction_f.objects.all())
         web_activities_ga = Interaction_ga.objects.all().aggregate(Sum('event_count'))['event_count__sum']
+        if (web_activities_ga is None):
+            web_activities_ga = 0
         web_activities = web_activities_file + web_activities_ga
         # Total number of sessions (a session includes multiple interactions)
         sessions_file = len(Interaction_f.objects.values('session_id').distinct())
         sessions_ga = Interaction_ga.objects.all().aggregate(Sum('session_count'))['session_count__sum']
+        if (sessions_ga is None):
+            sessions_ga = 0
         sessions = sessions_file + sessions_ga
         # Total number of web activities by page location
-        pages_file = list(Interaction_f.objects.all().values('page_location').annotate(total=Count('page_location')))
-        pages_ga = list(Interaction_ga.objects.all().values('page_location').annotate(total=Sum('event_count')))
+        pages_file = Interaction_f.objects.all().values('page_location').annotate(total=Count('page_location'))
+        pages_ga = Interaction_ga.objects.all().values('page_location').annotate(total=Sum('event_count'))
         pages = list(pages_file) + list(pages_ga)
-        pages = pd.DataFrame(pages).groupby(['page_location'], as_index=False).sum().to_dict('r')
-        pages = sorted(pages, key=lambda k : k['total'], reverse=True)
+        if (len(pages)):
+            pages = pd.DataFrame(pages).groupby(['page_location'], as_index=False).sum().to_dict('r')
+            pages = sorted(pages, key=lambda k : k['total'], reverse=True)
         
         # Total number of web activities by device categories
         device_categories_file = Interaction_f.objects.all().values('device_category').annotate(total=Count('device_category'))
@@ -89,8 +94,9 @@ def home(request):
         web_activity_data_file = Interaction_f.objects.all().values('event_name').annotate(total=Count('event_name'))
         web_activity_data_ga = Interaction_ga.objects.all().values('event_name').annotate(total=Sum('event_count'))
         web_activity_data = list(web_activity_data_file) + list(web_activity_data_ga)
-        web_activity_data = pd.DataFrame(web_activity_data).groupby(['event_name'], as_index=False).sum().to_dict('r')
-        web_activity_report = [(item['event_name'], item['total']) for item in list(web_activity_data)]
+        if (len(web_activity_data)):
+            web_activity_data = pd.DataFrame(web_activity_data).groupby(['event_name'], as_index=False).sum().to_dict('r')
+            web_activity_report = [(item['event_name'], item['total']) for item in list(web_activity_data)]
         # Cultural event report  - Total number of cultural events by event type
         event_data = Events.objects.all().values('event_type').annotate(total=Count('event_type'))
         event_report = [(item['event_type'], item['total']) for item in list(event_data)]
@@ -783,10 +789,13 @@ def get_most_popular(table_name, quantity=1, domain=None):
         
     list_interactions_f = Interaction_f.objects.filter(page_location__in=[obj['url'] for obj in list_objs])
     list_interactions_f = [model_to_dict(obj) for obj in list_interactions_f]
-    list_interactions_f = pd.DataFrame(list_interactions_f).groupby(['page_location', 'event_name'], as_index=False)['id'].count().rename(columns={'id':'event_count'}).to_dict('r')
+    if (len(list_interactions_f)):
+        list_interactions_f = pd.DataFrame(list_interactions_f).groupby(['page_location', 'event_name'], as_index=False)['id'].count().rename(columns={'id':'event_count'}).to_dict('r')
+    
     list_interactions_ga = list(Interaction_ga.objects.filter(page_location__in=[obj['url'] for obj in list_objs]).values('page_location', 'event_name', 'event_count'))
     list_interactions = list_interactions_f + list_interactions_ga
-    list_interactions = pd.DataFrame(list_interactions).groupby(['page_location', 'event_name'], as_index=False).sum().to_dict('r')
+    if (len(list_interactions)):
+        list_interactions = pd.DataFrame(list_interactions).groupby(['page_location', 'event_name'], as_index=False).sum().to_dict('r')
     list_objs_weight = {}
     
     for interaction in list_interactions:
@@ -1136,32 +1145,36 @@ def get_reports(request):
             sessions_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).values(
                 day=F('date')).annotate(sum=Sum('session_count'))
             sessions = list(sessions_file) + list(sessions_ga)
-            sessions = pd.DataFrame(sessions).groupby(['day'], as_index=False).sum().to_dict('r')
-            sessions = sorted(sessions, key=lambda k : k['day'])
+            if (len(sessions)):
+                sessions = pd.DataFrame(sessions).groupby(['day'], as_index=False).sum().to_dict('r')
+                sessions = sorted(sessions, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             sessions_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week').annotate(sum=Count('session_id', distinct=True))
             sessions_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week').annotate(sum=Sum('session_count'))
             sessions = list(sessions_file) + list(sessions_ga)
-            sessions = pd.DataFrame(sessions).groupby(['week'], as_index=False).sum().to_dict('r')
-            sessions = sorted(sessions, key=lambda k : k['week'])
+            if (len(sessions)):
+                sessions = pd.DataFrame(sessions).groupby(['week'], as_index=False).sum().to_dict('r')
+                sessions = sorted(sessions, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             sessions_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month').annotate(sum=Count('session_id', distinct=True))
             sessions_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month').annotate(sum=Sum('session_count'))
             sessions = list(sessions_file) + list(sessions_ga)
-            sessions = pd.DataFrame(sessions).groupby(['month'], as_index=False).sum().to_dict('r')
-            sessions = sorted(sessions, key=lambda k : k['month'])
+            if (len(sessions)):
+                sessions = pd.DataFrame(sessions).groupby(['month'], as_index=False).sum().to_dict('r')
+                sessions = sorted(sessions, key=lambda k : k['month'])
         else:
             sessions_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year').annotate(sum=Count('session_id', distinct=True))
             sessions_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year').annotate(sum=Sum('session_count'))
             sessions = list(sessions_file) + list(sessions_ga)
-            sessions = pd.DataFrame(sessions).groupby(['year'], as_index=False).sum().to_dict('r')
-            sessions = sorted(sessions, key=lambda k : k['year'])
+            if (len(sessions)):
+                sessions = pd.DataFrame(sessions).groupby(['year'], as_index=False).sum().to_dict('r')
+                sessions = sorted(sessions, key=lambda k : k['year'])
         reports.append(create_report('session_report', 'Statistiques de sessions Web',
                         sessions, 'column', group_type == 'none'))
 
@@ -1178,32 +1191,36 @@ def get_reports(request):
             web_activities_ga = Interaction_ga.objects.filter(date__range=[
                                                         start_date, end_date]).values(day=F('date')).annotate(sum=Sum('event_count'))
             web_activities = list(web_activities_file) + list(web_activities_ga)
-            web_activities = pd.DataFrame(web_activities).groupby(['day'], as_index=False).sum().to_dict('r')
-            web_activities = sorted(web_activities, key=lambda k : k['day'])
+            if (len(web_activities)):
+                web_activities = pd.DataFrame(web_activities).groupby(['day'], as_index=False).sum().to_dict('r')
+                web_activities = sorted(web_activities, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             web_activities_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week').annotate(sum=Count('id'))
             web_activities_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week').annotate(sum=Sum('event_count'))
             web_activities = list(web_activities_file) + list(web_activities_ga)
-            web_activities = pd.DataFrame(web_activities).groupby(['week'], as_index=False).sum().to_dict('r')
-            web_activities = sorted(web_activities, key=lambda k : k['week'])
+            if (len(web_activities)):
+                web_activities = pd.DataFrame(web_activities).groupby(['week'], as_index=False).sum().to_dict('r')
+                web_activities = sorted(web_activities, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             web_activities_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month').annotate(sum=Count('id'))
             web_activities_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month').annotate(sum=Sum('event_count'))
             web_activities = list(web_activities_file) + list(web_activities_ga)
-            web_activities = pd.DataFrame(web_activities).groupby(['month'], as_index=False).sum().to_dict('r')
-            web_activities = sorted(web_activities, key=lambda k : k['month'])
+            if (len(web_activities)):
+                web_activities = pd.DataFrame(web_activities).groupby(['month'], as_index=False).sum().to_dict('r')
+                web_activities = sorted(web_activities, key=lambda k : k['month'])
         else:
             web_activities_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year').annotate(sum=Count('id'))
             web_activities_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year').annotate(sum=Sum('event_count'))
             web_activities = list(web_activities_file) + list(web_activities_ga)
-            web_activities = pd.DataFrame(web_activities).groupby(['year'], as_index=False).sum().to_dict('r')
-            web_activities = sorted(web_activities, key=lambda k : k['year'])
+            if (len(web_activities)):
+                web_activities = pd.DataFrame(web_activities).groupby(['year'], as_index=False).sum().to_dict('r')
+                web_activities = sorted(web_activities, key=lambda k : k['year'])
         reports.append(create_report('web_activities_report',
                         'Statistiques d’activités Web', web_activities, 'column', group_type == 'none'))
 
@@ -1214,39 +1231,44 @@ def get_reports(request):
             web_activities_device_ga = Interaction_ga.objects.filter(date__range=[
                                                                 start_date, end_date]).values(type=F('device_category')).annotate(sum=Sum('event_count'))
             web_activities_device = list(web_activities_device_file) + list(web_activities_device_ga)
-            web_activities_device = pd.DataFrame(web_activities_device).groupby(['type'], as_index=False).sum().to_dict('r')
+            if (len(web_activities_device)):
+                web_activities_device = pd.DataFrame(web_activities_device).groupby(['type'], as_index=False).sum().to_dict('r')
         elif (group_type == 'daily'):
             web_activities_device_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).values(
                 day=F('visit_date'), type=F('device_category')).annotate(sum=Count('id'))
             web_activities_device_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).values(
                 day=F('date'), type=F('device_category')).annotate(sum=Sum('event_count'))
             web_activities_device = list(web_activities_device_file) + list(web_activities_device_ga)
-            web_activities_device = pd.DataFrame(web_activities_device).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_device = sorted(web_activities_device, key=lambda k : k['day'])
+            if (len(web_activities_device)):
+                web_activities_device = pd.DataFrame(web_activities_device).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_device = sorted(web_activities_device, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             web_activities_device_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week', type=F('device_category')).annotate(sum=Count('id'))
             web_activities_device_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week', type=F('device_category')).annotate(sum=Sum('event_count'))
             web_activities_device = list(web_activities_device_file) + list(web_activities_device_ga)
-            web_activities_device = pd.DataFrame(web_activities_device).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_device = sorted(web_activities_device, key=lambda k : k['week'])
+            if (len(web_activities_device)):
+                web_activities_device = pd.DataFrame(web_activities_device).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_device = sorted(web_activities_device, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             web_activities_device_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month', type=F('device_category')).annotate(sum=Count('id'))
             web_activities_device_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month', type=F('device_category')).annotate(sum=Sum('event_count'))
             web_activities_device = list(web_activities_device_file) + list(web_activities_device_ga)
-            web_activities_device = pd.DataFrame(web_activities_device).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_device = sorted(web_activities_device, key=lambda k : k['month'])
+            if (len(web_activities_device)):
+                web_activities_device = pd.DataFrame(web_activities_device).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_device = sorted(web_activities_device, key=lambda k : k['month'])
         else:
             web_activities_device_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year', type=F('device_category')).annotate(sum=Count('id'))
             web_activities_device_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year', type=F('device_category')).annotate(sum=Sum('event_count'))
             web_activities_device = list(web_activities_device_file) + list(web_activities_device_ga)
-            web_activities_device = pd.DataFrame(web_activities_device).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_device = sorted(web_activities_device, key=lambda k : k['year'])
+            if (len(web_activities_device)):
+                web_activities_device = pd.DataFrame(web_activities_device).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_device = sorted(web_activities_device, key=lambda k : k['year'])
         reports.append(create_report('session_device_report', 'Statistiques d’activités Web par types d’appareils',
                         web_activities_device, 'column', group_type == 'none'))
 
@@ -1257,39 +1279,44 @@ def get_reports(request):
             web_activities_browser_ga = Interaction_ga.objects.filter(date__range=[
                                                                 start_date, end_date]).values(type=F('browser')).annotate(sum=Sum('event_count'))
             web_activities_browser = list(web_activities_browser_file) + list(web_activities_browser_ga)
-            web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['type'], as_index=False).sum().to_dict('r')
+            if (len(web_activities_browser)):
+                web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['type'], as_index=False).sum().to_dict('r')
         elif (group_type == 'daily'):
             web_activities_browser_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).values(
                 day=F('visit_date'), type=F('browser')).annotate(sum=Count('id'))
             web_activities_browser_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).values(
                 day=F('date'), type=F('browser')).annotate(sum=Sum('event_count'))
             web_activities_browser = list(web_activities_browser_file) + list(web_activities_browser_ga)
-            web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_browser = sorted(web_activities_browser, key=lambda k : k['day'])
+            if (len(web_activities_browser)):
+                web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_browser = sorted(web_activities_browser, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             web_activities_browser_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week', type=F('browser')).annotate(sum=Count('id'))
             web_activities_browser_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week', type=F('browser')).annotate(sum=Sum('event_count'))
             web_activities_browser = list(web_activities_browser_file) + list(web_activities_browser_ga)
-            web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_browser = sorted(web_activities_browser, key=lambda k : k['week'])
+            if (len(web_activities_browser)):
+                web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_browser = sorted(web_activities_browser, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             web_activities_browser_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month', type=F('browser')).annotate(sum=Count('id'))
             web_activities_browser_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month', type=F('browser')).annotate(sum=Sum('event_count'))
             web_activities_browser = list(web_activities_browser_file) + list(web_activities_browser_ga)
-            web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_browser = sorted(web_activities_browser, key=lambda k : k['month'])
+            if (len(web_activities_browser)):
+                web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_browser = sorted(web_activities_browser, key=lambda k : k['month'])
         else:
             web_activities_browser_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year', type=F('browser')).annotate(sum=Count('id'))
             web_activities_browser_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year', type=F('browser')).annotate(sum=Sum('event_count'))
             web_activities_browser = list(web_activities_browser_file) + list(web_activities_browser_ga)
-            web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_browser = sorted(web_activities_browser, key=lambda k : k['year'])
+            if (len(web_activities_browser)):
+                web_activities_browser = pd.DataFrame(web_activities_browser).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_browser = sorted(web_activities_browser, key=lambda k : k['year'])
         reports.append(create_report('session_browser_report', 'Statistiques d’activités Web par navigateurs Web',
                         web_activities_browser, 'column', group_type == 'none'))
 
@@ -1300,39 +1327,44 @@ def get_reports(request):
             web_activities_os_ga = Interaction_ga.objects.filter(date__range=[
                                                                 start_date, end_date]).values(type=F('operating_system')).annotate(sum=Sum('event_count'))
             web_activities_os = list(web_activities_os_file) + list(web_activities_os_ga)
-            web_activities_os = pd.DataFrame(web_activities_os).groupby(['type'], as_index=False).sum().to_dict('r')
+            if (len(web_activities_os)):
+                web_activities_os = pd.DataFrame(web_activities_os).groupby(['type'], as_index=False).sum().to_dict('r')
         elif (group_type == 'daily'):
             web_activities_os_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).values(
                 day=F('visit_date'), type=F('operating_system')).annotate(sum=Count('id'))
             web_activities_os_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).values(
                 day=F('date'), type=F('operating_system')).annotate(sum=Sum('event_count'))
             web_activities_os = list(web_activities_os_file) + list(web_activities_os_ga)
-            web_activities_os = pd.DataFrame(web_activities_os).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_os = sorted(web_activities_os, key=lambda k : k['day'])
+            if (len(web_activities_os)):
+                web_activities_os = pd.DataFrame(web_activities_os).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_os = sorted(web_activities_os, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             web_activities_os_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week', type=F('operating_system')).annotate(sum=Count('id'))
             web_activities_os_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week', type=F('operating_system')).annotate(sum=Sum('event_count'))
             web_activities_os = list(web_activities_os_file) + list(web_activities_os_ga)
-            web_activities_os = pd.DataFrame(web_activities_os).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_os = sorted(web_activities_os, key=lambda k : k['week'])
+            if (len(web_activities_os)):
+                web_activities_os = pd.DataFrame(web_activities_os).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_os = sorted(web_activities_os, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             web_activities_os_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month', type=F('operating_system')).annotate(sum=Count('id'))
             web_activities_os_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month', type=F('operating_system')).annotate(sum=Sum('event_count'))
             web_activities_os = list(web_activities_os_file) + list(web_activities_os_ga)
-            web_activities_os = pd.DataFrame(web_activities_os).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_os = sorted(web_activities_os, key=lambda k : k['month'])
+            if (len(web_activities_os)):
+                web_activities_os = pd.DataFrame(web_activities_os).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_os = sorted(web_activities_os, key=lambda k : k['month'])
         else:
             web_activities_os_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year', type=F('operating_system')).annotate(sum=Count('id'))
             web_activities_os_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year', type=F('operating_system')).annotate(sum=Sum('event_count'))
             web_activities_os = list(web_activities_os_file) + list(web_activities_os_ga)
-            web_activities_os = pd.DataFrame(web_activities_os).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_os = sorted(web_activities_os, key=lambda k : k['year'])
+            if (len(web_activities_os)):
+                web_activities_os = pd.DataFrame(web_activities_os).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_os = sorted(web_activities_os, key=lambda k : k['year'])
         reports.append(create_report('session_os_report', 'Statistiques d’activités Web par systèmes d’exploitation',
                         web_activities_os, 'column', group_type == 'none'))
 
@@ -1343,39 +1375,44 @@ def get_reports(request):
             web_activities_type_ga = Interaction_ga.objects.filter(date__range=[
                                                                 start_date, end_date]).values(type=F('event_name')).annotate(sum=Sum('event_count'))
             web_activities_type = list(web_activities_type_file) + list(web_activities_type_ga)
-            web_activities_type = pd.DataFrame(web_activities_type).groupby(['type'], as_index=False).sum().to_dict('r')
+            if (len(web_activities_type)):
+                web_activities_type = pd.DataFrame(web_activities_type).groupby(['type'], as_index=False).sum().to_dict('r')
         elif (group_type == 'daily'):
             web_activities_type_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).values(
                 day=F('visit_date'), type=F('event_name')).annotate(sum=Count('id'))
             web_activities_type_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).values(
                 day=F('date'), type=F('event_name')).annotate(sum=Sum('event_count'))
             web_activities_type = list(web_activities_type_file) + list(web_activities_type_ga)
-            web_activities_type = pd.DataFrame(web_activities_type).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_type = sorted(web_activities_type, key=lambda k : k['day'])
+            if (len(web_activities_type)):
+                web_activities_type = pd.DataFrame(web_activities_type).groupby(['day', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_type = sorted(web_activities_type, key=lambda k : k['day'])
         elif (group_type == 'weekly'):
             web_activities_type_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('visit_date')).values('week', type=F('event_name')).annotate(sum=Count('id'))
             web_activities_type_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 week=TruncWeek('date')).values('week', type=F('event_name')).annotate(sum=Sum('event_count'))
             web_activities_type = list(web_activities_type_file) + list(web_activities_type_ga)
-            web_activities_type = pd.DataFrame(web_activities_type).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_type = sorted(web_activities_type, key=lambda k : k['week'])
+            if (len(web_activities_type)):
+                web_activities_type = pd.DataFrame(web_activities_type).groupby(['week', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_type = sorted(web_activities_type, key=lambda k : k['week'])
         elif (group_type == 'monthly'):
             web_activities_type_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('visit_date')).values('month', type=F('event_name')).annotate(sum=Count('id'))
             web_activities_type_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 month=TruncMonth('date')).values('month', type=F('event_name')).annotate(sum=Sum('event_count'))
             web_activities_type = list(web_activities_type_file) + list(web_activities_type_ga)
-            web_activities_type = pd.DataFrame(web_activities_type).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_type = sorted(web_activities_type, key=lambda k : k['month'])
+            if (len(web_activities_type)):
+                web_activities_type = pd.DataFrame(web_activities_type).groupby(['month', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_type = sorted(web_activities_type, key=lambda k : k['month'])
         else:
             web_activities_type_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).annotate(
                 year=TruncYear('visit_date')).values('year', type=F('event_name')).annotate(sum=Count('id'))
             web_activities_type_ga = Interaction_ga.objects.filter(date__range=[start_date, end_date]).annotate(
                 year=TruncYear('date')).values('year', type=F('event_name')).annotate(sum=Sum('event_count'))
             web_activities_type = list(web_activities_type_file) + list(web_activities_type_ga)
-            web_activities_type = pd.DataFrame(web_activities_type).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
-            web_activities_type = sorted(web_activities_type, key=lambda k : k['year'])
+            if (len(web_activities_type)):
+                web_activities_type = pd.DataFrame(web_activities_type).groupby(['year', 'type'], as_index=False).sum().to_dict('r')
+                web_activities_type = sorted(web_activities_type, key=lambda k : k['year'])
         reports.append(create_report('session_type_report', 'Statistiques d’activités Web par types d’activités',
                         web_activities_type, 'column', group_type == 'none'))
 
