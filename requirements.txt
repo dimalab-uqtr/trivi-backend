@@ -52,3 +52,6 @@ djangorestframework-jwt
 django-cors-headers
 pydash
 django-environ
+google-api-python-client
+google-analytics-data
+oauth2client

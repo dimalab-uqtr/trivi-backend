@@ -24,10 +24,6 @@
                     "type": "string",
                     "source_name": "lang"
                 },
-                "count_down": {
-                    "type": "int",
-                    "source_name": "event_dates_count"
-                },
                 "status": {
                     "type": "string",
                     "source_name": "status"
@@ -47,145 +43,33 @@
                 "url": {
                     "type": "string",
                     "source_name": "url"
+                },
+                "location_name": {
+                    "type": "string",
+                    "source_name": "venue.name"
+                },
+                "location_address": {
+                    "type": "string",
+                    "source_name": "venue.address"
+                },
+                "location_city": {
+                    "type": "string",
+                    "source_name": "venue.city"
+                },
+                "location_state": {
+                    "type": "string",
+                    "source_name": "venue.state"
+                },
+                "location_country": {
+                    "type": "string",
+                    "default": "Canada" 
+                },
+                "location_zipcode": {
+                    "type": "string",
+                    "source_name": "venue.zip"
                 }
             },
             "m2m_tables": [
-                {
-                    "model_name": "resource",
-                    "display_name": "resource",
-                    "sources": [
-                        {
-                            "fields": {
-                                "resource_url": {
-                                    "type": "string",
-                                    "source_name": "photo_url"
-                                }, 
-                                "resource_name": {
-                                    "type": "string",
-                                    "default": "photo"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "resource_id",
-                            "connected_table": {
-                                "model_name": "eventresource",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        },
-                        {
-                            "fields": {
-                                "resource_url": {
-                                    "type": "string",
-                                    "source_name": "extra_large_photo_url"
-                                }, 
-                                "resource_name": {
-                                    "type": "string",
-                                    "default": "extra_large_photo"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "resource_id",
-                            "connected_table": {
-                                "model_name": "eventresource",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        },
-                        {
-                            "fields": {
-                                "resource_url": {
-                                    "type": "string",
-                                    "source_name": "thumbnail_url"
-                                }, 
-                                "resource_name": {
-                                    "type": "string",
-                                    "default": "thumbnail"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "resource_id",
-                            "connected_table": {
-                                "model_name": "eventresource",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        },
-                        {
-                            "fields": {
-                                "resource_url": {
-                                    "type": "string",
-                                    "source_name": "website_url"
-                                }, 
-                                "resource_name": {
-                                    "type": "string",
-                                    "default": "website"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "resource_id",
-                            "connected_table": {
-                                "model_name": "eventresource",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        }
-                    ]
-                }, 
-                {
-                    "model_name": "geolocation",
-                    "display_name": "geolocation",
-                    "sources": [
-                        {
-                            "fields": {
-                                "location_id": {
-                                    "type": "string",
-                                    "source_name": "venue.id"
-                                },
-                                "location_name": {
-                                    "type": "string",
-                                    "source_name": "venue.name"
-                                },
-                                "address": {
-                                    "type": "string",
-                                    "source_name": "venue.address"
-                                },
-                                "address2": {
-                                    "type": "string",
-                                    "source_name": "venue.address2"
-                                },
-                                "city": {
-                                    "type": "string",
-                                    "source_name": "venue.city"
-                                },
-                                "state": {
-                                    "type": "string",
-                                    "source_name": "venue.state"
-                                },
-                                "country": {
-                                    "type": "string",
-                                    "default": "Canada"
-                                },
-                                "zip": {
-                                    "type": "string",
-                                    "source_name": "venue.zip"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "location_id",
-                            "connected_table": {
-                                "model_name": "eventlocation",
-                                "display_name": "",
-                                "fields": {
-                                    "room": {
-                                        "type": "string",
-                                        "source_name": "room.id"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                }, 
                 {
                     "model_name": "businessentity",
                     "display_name": "businessentity",
@@ -312,46 +196,29 @@
                 "url": {
                     "type": "string",
                     "source_name": "href"
+                },
+                "location_name": {
+                    "type": "string",
+                    "source_name": "lieu"
+                },
+                "location_address": {
+                    "type": "string",
+                    "source_name": "street"
+                },
+                "location_city": {
+                    "type": "string",
+                    "source_name": "city"
+                },
+                "location_state": {
+                    "type": "string",
+                    "source_name": "region"
+                },
+                "location_country": {
+                    "type": "string",
+                    "source_name": "country" 
                 }
             },
             "m2m_tables": [
-                {
-                    "model_name": "geolocation",
-                    "display_name": "geolocation",
-                    "sources": [
-                        {
-                            "fields": {
-                                "location_name": {
-                                    "type": "string",
-                                    "source_name": "lieu"
-                                },
-                                "address": {
-                                    "type": "string",
-                                    "source_name": "street"
-                                },
-                                "city": {
-                                    "type": "string",
-                                    "source_name": "city"
-                                },
-                                "state": {
-                                    "type": "string",
-                                    "source_name": "region"
-                                },
-                                "country": {
-                                    "type": "string",
-                                    "source_name": "country"
-                                }
-                            },
-                            "connected_field1": "event_id",
-                            "connected_field2": "location_id",
-                            "connected_table": {
-                                "model_name": "eventlocation",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        }
-                    ]
-                }
             ],
             "o2m_tables": [
                 {
@@ -406,7 +273,6 @@
             "m2m_tables": [],
             "o2m_tables": []
         },
-
         "crawl_data": {
             "model_name": "products",
             "is_reformat": false,
@@ -475,7 +341,7 @@
     },
     "web-activity": {
         "default": {
-            "model_name": "interaction",
+            "model_name": "interaction_f",
             "is_reformat": true,
             "fields": {
                 "session_id": {
@@ -497,10 +363,6 @@
                 "device_category": {
                     "type": "string",
                     "source_name": "device.category"
-                },
-                "device_brand": {
-                    "type": "string",
-                    "source_name": "device.mobile_brand_name"
                 },
                 "browser": {
                     "type": "string",
@@ -525,69 +387,66 @@
                 "traffic_source": {
                     "type": "string",
                     "source_name": "traffic_source.source"
+                },
+                "geolocation_city": {
+                    "type": "string",
+                    "source_name": "geo.city"
+                },
+                "geolocation_state": {
+                    "type": "string",
+                    "source_name": "geo.region"
+                },
+                "geolocation_country": {
+                    "type": "string",
+                    "source_name": "geo.country" 
                 }
             },
-            "m2m_tables": [
-                {
-                    "model_name": "geolocation",
-                    "display_name": "geolocation",
-                    "sources": [
-                        {
-                            "fields": {
-                                "city": {
-                                    "type": "string",
-                                    "source_name": "geo.city"
-                                },
-                                "region": {
-                                    "type": "string",
-                                    "source_name": "geo.continent"
-                                },
-                                "state": {
-                                    "type": "string",
-                                    "source_name": "geo.region"
-                                },
-                                "country": {
-                                    "type": "string",
-                                    "source_name": "geo.country"
-                                }
-                            },
-                            "connected_field1": "interaction_id",
-                            "connected_field2": "location_id",
-                            "connected_table": {
-                                "model_name": "interactionlocation",
-                                "display_name": "",
-                                "fields": {}
-                            }
-                        }
-                    ]
+            "m2m_tables": [],
+            "o2m_tables": []
+        }
+    },
+    "google-analytic": {
+        "default": {
+            "model_name": "interaction_ga",
+            "is_reformat": true,
+            "fields": {
+                "event_count": {
+                    "type": "int",
+                    "source_name": "eventCount"
+                },
+                "session_count": {
+                    "type": "int",
+                    "source_name": "sessions"
+                },
+                "date": {
+                    "type": "string",
+                    "source_name": "date"
+                },
+                "operating_system": {
+                    "type": "string",
+                    "source_name": "operatingSystem"
+                },
+                "device_category": {
+                    "type": "string",
+                    "source_name": "deviceCategory"
+                },
+                "country": {
+                    "type": "string",
+                    "source_name": "country"
+                },
+                "browser": {
+                    "type": "string",
+                    "source_name": "browser"
+                },
+                "page_location": {
+                    "type": "string",
+                    "source_name": "pageLocation"
+                },
+                "event_name": {
+                    "type": "string",
+                    "source_name": "eventName"
                 }
-            ],
-            "o2m_tables": [
-                {
-                    "model_name": "itempreference",
-                    "display_name": "itempreference",
-                    "sources": [
-                        {
-                            "connected_field": "interaction_id",
-                            "array": "items",
-                            "fields": {
-                                "item_id": {
-                                    "type": "string",
-                                    "source_name": "item_id"
-                                },
-                                "item_type": {
-                                    "type": "string",
-                                    "source_name": "item_category"
-                                },
-                                "interaction_event_name": {
-                                    "type": "string",
-                                    "source_name": "item_eventname" 
-                                }
-                            }
-                        }
-                    ]
-                }
-            ]
+            }
         }
     }
 }

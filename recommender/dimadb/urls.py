@@ -1,3 +1,4 @@
+from multiprocessing import synchronize
 from django.urls import path
 from .views import *
 
@@ -17,4 +18,6 @@ urlpatterns = [
     path('delete-multiple-items/<item_type>/<pk>/', delete_imported_items),
     path('train-similar-recommend/', train_similar_recommend),
     path('update-activity-weight/', update_activity_weight),
+    path('synchronize-google-analytic/', synchronize_google_analytic),
+    path('get-synchronize-end-date/', get_synchronize_end_date),
 ]

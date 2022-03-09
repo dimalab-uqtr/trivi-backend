@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "trivi-react",
+  "private_key_id": "038593a2ad57a0d74146786e202bb4fd6ef3c8ca",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDGL9vyPVDbL0qQ\nvZdAhiZiZNmaLQJGrCpN1UW4ziL4TgCyt2RloiR2YFnb+lWZTKKXqnxUCjFcAEuq\nlJEfg1o3X2i+tdPHFkvdvgrjcfQFHZXcR05V0qsEVyHV85gUS78SX6jVIVI+p3l8\n1lacIrnGtBe2MujsXqTtLbvalw0BL/7aQLygPZQtQyswhNbX5E8FUmi/sjQoKAjD\nfImqqSlf3iA7EnlTx0ARa0nHl873nNsQinGWMWs6ecF83Jra3D2CvDdx/+kjxDpC\nzsl+M2XC7nRftJ+JDWCFeA56VJxLhZNVacEym/e/0zoxpiybEfx96oP/U+9Mjxft\nRAYM72CzAgMBAAECggEACzt5KWsvjaH02uveilSlZkbgTQGnXbQHmG5cS5Nl81Fl\nxBCVdcEmdI2/agfvxAbONu79qZGuUdAzzvt+l3JNXFK2+rVkHFDM2fNvEIxLz+Jp\nCkQBp5GPXxPvzKgdWBZ27NFTyJ3hLcCLfSIfZIKp/siu3gUCoyrgtA83KgtiPE06\nM374t2rpZi+sTFb1zXgertddXR08dfuHmiKs/hXv12DO/6EUnL1Nvk4XL3oeIYLu\n/PlIXFglRS1GdOEwNUg+T190ySpfEYM98vlBs1kFhg+eOLar+nNNMS5qpIY5UfIR\nM/zXOI59xxlAZ+WRKh4DOx0S/15cSFVNujP0F/Yb2QKBgQDlUSPBg/AqPuyHBiW6\noSZ3/8Lf9CdbwvLfH/v5TJSKh+IQfcDBGR3+UnnJWAEQmiOQatVpDuAHG/DohnQd\n1vIyJuEiB0b4sanIsBMvOEO4FVhmSmFuwbakHb2AiOP4WjWbtoVamb+e8s4y5Si5\nduYxD2kBfXZVp4nxktmvyj+ARwKBgQDdP2xpG0Vucz0Jqf9j9IkgftZlLN13Yj6i\nNOisb25LFN32ZFXQu14fDxx/kdhics/wNG0luzo2vworuje1Vpb5rBjrPVZ6sEuw\n8Zn9tZA65NobkbbCJm6hckE9lXvojfIhhYabNAwiA1QMKLimU4gI1SftH1QCc09O\nUO0Vu3KeNQKBgEgKtq378j6DaDF/N+kq6Xf3jNRo0ticJUr9tF58tYnT6Kx/pUfE\nyUx1wrcDg8ogcp3TQlpwBueU2plibCZXud0Ro9bZ7G0C+7EFx/EkvvmdExmHspZm\nGyfyA+/WkbAbPw49SCXPeYjJBQiuP54MgYLWMYn7TWrZaJfRJ7x3UH3PAoGAE29n\n2Y/QuJQc74VkbuZjSVx6/uZDCiKyN9OIAOXE/Yl2uhc0RqK+8OGF8lrgdD17sLEa\nSW85/OcpQJAaJq7Vklcg1UFNIHfuHjwK9/OEGPhThIp3UHTJ0RrVSlCgUtxtQa6W\nFXor+qzqLCtDlTDPSV9YI4dV/OUeOVX4jakqt2UCgYB7nBMtftinb6IRWMM5qVwd\n9T1ARqTX3XxQTrLjjjnOip+XSjPcccmb0oKAa6oOsA/AMNRRHNiWYZdu78vHOuM4\nF8HAu7DzoSJaQU28SuX29Gm6yl5p7vJSWpGUMLMbCdrY+sfFoD5bZbaCeqSYezfA\nt4AC2d5Y74g4hcMW6xmJjQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "culturemauricie@trivi-react.iam.gserviceaccount.com",
+  "client_id": "105192901865787924905",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/culturemauricie%40trivi-react.iam.gserviceaccount.com"
+}
