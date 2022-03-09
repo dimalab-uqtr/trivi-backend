@@ -6,7 +6,7 @@ from .models import Events, Products, Interaction_f, ImportInfo
 class InteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interaction_f
-        fields = ('id', 'interaction_id', 'session_id', 'visit_date', 'event_name', 'page_title', 'page_location', 'operating_system', 'device_category', 'device_brand', 'browser')
+        fields = ('id', 'session_id', 'visit_date', 'event_name', 'page_title', 'page_location', 'operating_system', 'device_category', 'browser')
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Events
