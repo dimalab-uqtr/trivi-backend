@@ -1,3 +1,4 @@
+from tkinter import E
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -20,6 +21,7 @@ from google.analytics.data_v1beta.types import Metric
 from google.analytics.data_v1beta.types import RunReportRequest
 from apiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
+from slugify import slugify
 
 import pandas as pd
 import random
@@ -697,7 +699,7 @@ def delete_imported_items(request, item_type, pk):
 
 
 # Generate recommend api to retrieve recommendation
-def generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_id):
+def generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_url):
     api = IP_DOMAIN + '/dimadb/get-list-recommend/?'
     api += 'itemType=' + item_type
     api += '&level=' + level
@@ -707,8 +709,8 @@ def generate_recommend_api(level, item_type, recommend_type, quantity, domain, i
         api += '&recommendType=' + recommend_type
     if (domain):
         api += '&domain=' + domain
-    if (item_id):
-        api += '&itemId=' + item_id
+    if (item_url):
+        api += '&itemUrl=' + item_url
 
     return api
 
@@ -732,20 +734,22 @@ def get_upcoming(table_name, quantity=1, domain=None):
             filter_params['product_type'] = domain
 
     list_objs = Model.objects.filter(Q(**filter_params))
-    list_objs = list(list_objs)
+    list_objs = [model_to_dict(obj) for obj in list(list_objs)]
     
     if (table_name == 'events'):
         list_filtered_obj = []
         today = datetime.today()
         EventDateModel = apps.get_model(app_label='dimadb', model_name='eventdate')
         for obj in list_objs:
-            list_event_dates = EventDateModel.objects.filter(event_id=obj.id, date__gte=today).order_by('date')
+            list_event_dates = EventDateModel.objects.filter(event_id=obj['id'], date__gte=today).order_by('date')
             list_event_dates = [model_to_dict(obj) for obj in list(list_event_dates)]
             if (len(list_event_dates)):
-                obj_dict = model_to_dict(obj)
-                obj_dict['next_date'] = list_event_dates[0]['date']
-                list_filtered_obj.append(obj_dict)
-        list_objs = sorted(list_filtered_obj, key=lambda x: x['next_date'])
+                obj['next_date'] = list_event_dates[0]['date']
+                list_filtered_obj.append(obj)
+        if (len(list_filtered_obj)):   
+            list_objs = sorted(list_filtered_obj, key=lambda x: x['next_date'])
+        else:
+            list_objs = []
         
     for i in range(0, int(quantity)):
         if (i < len(list_objs)):
@@ -764,6 +768,7 @@ def get_most_popular(table_name, quantity=1, domain=None):
     display_fields = recommend_display_fields[table_name]
     list_recommend_items = []
     filter_params = {}
+    list_interactions = []
 
     if (domain is not None):
         if (table_name == 'events'):
@@ -772,32 +777,35 @@ def get_most_popular(table_name, quantity=1, domain=None):
             filter_params['product_type'] = domain
 
     list_objs = Model.objects.filter(Q(**filter_params))
-    list_objs = list(list_objs)
+    list_objs = [model_to_dict(obj) for obj in list(list_objs)]
     
     if (table_name == 'events'):
         list_filtered_obj = []
         today = datetime.today()
         EventDateModel = apps.get_model(app_label='dimadb', model_name='eventdate')
         for obj in list_objs:
-            list_event_dates = EventDateModel.objects.filter(event_id=obj.id, date__gte=today).order_by('date')
+            list_event_dates = EventDateModel.objects.filter(event_id=obj['id'], date__gte=today).order_by('date')
             list_event_dates = [model_to_dict(obj) for obj in list(list_event_dates)]
             if (len(list_event_dates)):
-                obj_dict = model_to_dict(obj)
-                obj_dict['next_date'] = list_event_dates[0]['date']
-                list_filtered_obj.append(obj_dict)
-        list_objs = sorted(list_filtered_obj, key=lambda x: x['next_date'])
+                obj['next_date'] = list_event_dates[0]['date']
+                list_filtered_obj.append(obj)
+        if (len(list_filtered_obj)):        
+            list_objs = sorted(list_filtered_obj, key=lambda x: x['next_date'])
+        else:
+            list_objs = []
         
-    list_interactions_f = Interaction_f.objects.filter(page_location__in=[obj['url'] for obj in list_objs])
-    list_interactions_f = [model_to_dict(obj) for obj in list_interactions_f]
-    if (len(list_interactions_f)):
-        list_interactions_f = pd.DataFrame(list_interactions_f).groupby(['page_location', 'event_name'], as_index=False)['id'].count().rename(columns={'id':'event_count'}).to_dict('r')
+    if (len(list_objs)): 
+        list_interactions_f = Interaction_f.objects.filter(page_location__in=[obj['url'] for obj in list_objs])
+        list_interactions_f = [model_to_dict(obj) for obj in list_interactions_f]
+        if (len(list_interactions_f)):
+            list_interactions_f = pd.DataFrame(list_interactions_f).groupby(['page_location', 'event_name'], as_index=False)['id'].count().rename(columns={'id':'event_count'}).to_dict('r')
+        
+        list_interactions_ga = list(Interaction_ga.objects.filter(page_location__in=[obj['url'] for obj in list_objs]).values('page_location', 'event_name', 'event_count'))
+        list_interactions = list_interactions_f + list_interactions_ga
+        if (len(list_interactions)):
+            list_interactions = pd.DataFrame(list_interactions).groupby(['page_location', 'event_name'], as_index=False).sum().to_dict('r')
     
-    list_interactions_ga = list(Interaction_ga.objects.filter(page_location__in=[obj['url'] for obj in list_objs]).values('page_location', 'event_name', 'event_count'))
-    list_interactions = list_interactions_f + list_interactions_ga
-    if (len(list_interactions)):
-        list_interactions = pd.DataFrame(list_interactions).groupby(['page_location', 'event_name'], as_index=False).sum().to_dict('r')
     list_objs_weight = {}
-    
     for interaction in list_interactions:
         page_location = interaction['page_location']
         event_name = interaction['event_name']
@@ -818,7 +826,10 @@ def get_most_popular(table_name, quantity=1, domain=None):
             obj['score'] = list_objs_weight[obj['url']]
         else:
             obj['score'] = 0
-    list_objs = sorted(list_objs, key=lambda d: d['score'], reverse=True)
+    if (len(list_objs)):   
+        list_objs = sorted(list_objs, key=lambda d: d['score'], reverse=True)
+    else:
+        list_objs = []
     
     for i in range(0, int(quantity)):
         if (i < len(list_objs)):
@@ -835,11 +846,12 @@ def get_most_popular(table_name, quantity=1, domain=None):
 
 
 # Get similarity recommendation
-def get_similar(table_name, quantity=1, item_id=None):
+def get_similar(table_name, quantity=1, item_url=None):
     Model = apps.get_model(app_label='dimadb', model_name=table_name)
     display_fields = recommend_display_fields[table_name]
-    list_similar_items = ContentBasedRecommender.recommend_items_by_items(table_name=table_name, items_id=item_id)
     list_recommend_items = []
+    item_id = Model.objects.get(url=item_url).id
+    list_similar_items = ContentBasedRecommender.recommend_items_by_items(table_name=table_name, items_id=item_id)
     
     if (table_name == 'events'):
         list_filtered_obj = []
@@ -860,7 +872,8 @@ def get_similar(table_name, quantity=1, item_id=None):
             obj = model_to_dict(obj)
             recommend_item = {}
             for field in list(display_fields):
-                recommend_item[field] = obj[field]
+                if field in obj:
+                    recommend_item[field] = obj[field]
             if (table_name == 'events'):
                 recommend_item['next_date'] = similar_obj['next_date']
                 recommend_item['similarity'] = similar_obj['similarity']
@@ -873,7 +886,7 @@ def get_similar(table_name, quantity=1, item_id=None):
     
     
 # Get list of recommend items
-def get_recommend_items(level, item_type, recommend_type, quantity, domain, item_id):
+def get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url):
     list_recommend_items = []
 
     if (level == 'Homepage'):
@@ -896,9 +909,9 @@ def get_recommend_items(level, item_type, recommend_type, quantity, domain, item
                 list_recommend_items = get_most_popular(table_name=item_type, quantity=quantity, domain=domain)
     else:
         if (item_type == 'events'):
-            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_url=item_url)
         elif (item_type == 'products'):
-            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_id=item_id)
+            list_recommend_items = get_similar(table_name=item_type, quantity=quantity, item_url=item_url)
 
     return list_recommend_items
 
@@ -917,8 +930,8 @@ def get_list_recommend(request):
             recommend_type = request.GET.get('recommendType', None)
             quantity = request.GET.get('quantity', None)
             domain = request.GET.get('domain', None)
-            item_id = request.GET.get('itemId', None)
-            list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_id)
+            item_url = request.GET.get('itemUrl', None)
+            list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url)
             return Response({'itemType': item_type, 'recommendType': recommend_type, 'items': list_recommend_items}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'Authorization failed'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -969,12 +982,14 @@ def get_recommend_api(request):
         recommend_type = body['recommendType']
         quantity = body['quantity']
         domain = body['domain']
-        item_id = body['itemId']
+        item_url = body['itemUrl']
         #Get recommend api + recommend list
-        api = generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_id)
-        list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_id)
-        embedded_link_not_gui = get_embedded_link(api, recommend_type, is_gui=False)
-        embedded_link_gui = get_embedded_link(api, recommend_type, is_gui=True)
+        api = generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_url)
+        list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url)
+        # embedded_link_not_gui = get_embedded_link(api, recommend_type, is_gui=False)
+        # embedded_link_gui = get_embedded_link(api, recommend_type, is_gui=True)
+        embedded_link_not_gui = get_embedded_recommendation(is_gui=False)
+        embedded_link_gui = get_embedded_recommendation(is_gui=True)
         return Response({'items': list_recommend_items, 'api': api, 'apiKey': API_KEY, 'embeddedLinkNotGui': embedded_link_not_gui, 'embeddedLinkGui': embedded_link_gui}, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
@@ -1593,3 +1608,114 @@ def synchronize_google_analytic(request):
     except Exception as error:
         return Response({'message': error})
     
+def get_embedded_recommendation(is_gui=False):
+    embedded_link = ''
+    css_link = '<link rel="stylesheet" href="' + IP_DOMAIN + '/static/dimadb/css/recommender.css">'
+    div_link = '<div id="recommendations"></div>'
+    js_link = '<script src="' + IP_DOMAIN + '/static/dimadb/js/recommender.js' + '"></script>'
+    recommend_link = '<script>' + '\n'
+    recommend_link += '\tvar recommendations = getRecommendation("' + IP_DOMAIN + '/dimadb/get-recommendation", "' + API_KEY + '");' + '\n'
+    recommend_link += '\trecommendations.then(res => {' + '\n'
+    recommend_link += '\t\t//Handle recommend items here' + '\n'
+    if (is_gui):
+        recommend_link += '\t\t//Below code shows recommendation GUI' + '\n'
+        recommend_link += '\t\tgetListViews(res);' + '\n'
+    else:
+        recommend_link += '\t\t//Below code shows recommendation results' + '\n'
+        recommend_link += '\t\tconsole.log(res);' + '\n'
+    recommend_link += '\t});' + '\n'
+    recommend_link += '</script>'
+    if (is_gui):
+        embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
+    else:
+        embedded_link = js_link + '\n' + recommend_link
+    
+    return embedded_link
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
+def get_recommendation(request):
+    try:
+        # Authorization
+        bearer_token = request.headers.get('Authorization')
+        if (bearer_token == 'Bearer ' + API_KEY):
+            # Read request info
+            url = request.GET.get('url', None)
+            url_parts = url.split('/')
+            url_len = len(url_parts)
+            recommendation = []
+            item_type = ''
+            item_url = ''
+            slug_domain = ''
+            item_domain = ''
+            recommend_level = ''
+            recommend_types = []
+            
+            #Mapping itemType, recommendLevel, domain with url
+            for index, part in enumerate(url_parts):
+                if part == 'magazine':
+                    item_type = 'products'
+                    if (url_len - index == 3):
+                        recommend_level = 'Item'
+                    elif (url_len - index == 2):
+                        if url_parts[url_len-1] != 'tous-les-articles':
+                            recommend_level = 'Domain'
+                            slug_domain = url_parts[url_len-1]
+                        else:
+                            recommend_level = 'Homepage'
+                    else:
+                        recommend_level = 'Homepage'
+                    break
+                elif part == 'evenements':
+                    item_type = 'events'
+                    if (url_len - index == 2):
+                        recommend_level = 'Item'
+                    else:
+                        recommend_level = 'Homepage'
+                    break
+            
+            if (recommend_level == 'Item'):
+                item_url = url
+                recommend_types += ['Similar']
+            elif (recommend_level == 'Homepage'):
+                if (item_type == 'events'):
+                    recommend_types += ['Upcoming']
+                recommend_types += ['Most popular']
+            elif (recommend_level == 'Domain'):
+                if (item_type == 'events'):
+                    recommend_types += ['Upcoming']
+                recommend_types += ['Most popular']
+                Model = apps.get_model(app_label='dimadb', model_name=item_type)
+                domain_column = ''
+                
+                if (item_type == 'events'):
+                    domain_column = 'event_type'
+                else:
+                    domain_column = 'product_type'
+                item_domains = Model.objects.all().values(domain_column).distinct()
+                item_domains = [domain[domain_column] for domain in list(item_domains)]
+                
+                for domain in item_domains:
+                    if slugify(domain) == slug_domain:
+                        item_domain = domain
+                        break
+                    
+            if (url == 'file:///Users/nguyenchannam/Desktop/test.html'):
+                recommend_level = 'Item'
+                item_type = 'events'
+                recommend_types = ['Similar']
+                item_url = 'https://dici.ca/evenements/helene-guilmaine-a-l-origine-les-deesses-meres'
+                
+            for recommend_type in recommend_types:
+                recommends = get_recommend_items(recommend_level, item_type, recommend_type, 4, item_domain, item_url)
+                recommendation.append({
+                    'itemType': item_type,
+                    'recommendType': recommend_type, 
+                    'items': recommends})
+            
+            return Response(recommendation, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Authorization failed'}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as error:
+        return Response({'message': error})

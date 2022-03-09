@@ -58,3 +58,4 @@ oauth2client
 google-api-core
 grpcio
 python-dotenv
+python-slugify

@@ -20,4 +20,5 @@ urlpatterns = [
     path('update-activity-weight/', update_activity_weight),
     path('synchronize-google-analytic/', synchronize_google_analytic),
     path('get-synchronize-end-date/', get_synchronize_end_date),
+    path('get-recommendation/', get_recommendation),
 ]

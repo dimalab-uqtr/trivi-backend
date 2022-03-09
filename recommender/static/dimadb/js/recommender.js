@@ -24,6 +24,7 @@ async function getRecommendItems(url, itemType, recommendType) {
   return recommendItems;
 }
 
+
 function getListView(containerId, res) {
     const recommendItems = res.items;
     const itemType = res.itemType;
@@ -245,26 +246,110 @@ function getSimilarItems(itemType = "", itemId = "", quantity = 0) {
 }
 
 async function getRecommend(url, bearerToken) {
-    var recommendItems = {};
-    if (url) {
-      recommendItems = await fetch(url,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-          },
+  var recommendItems = {};
+  if (url) {
+    recommendItems = await fetch(url,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+      }
+    )
+      .then((result) => result.json())
+      .then((result) => {
+          return {
+            'itemType': result.itemType,
+            'recommendType': result.recommendType,
+            'items': result.items
         }
-      )
-        .then((result) => result.json())
-        .then((result) => {
-           return {
-              'itemType': result.itemType,
-              'recommendType': result.recommendType,
-              'items': result.items
-          }
-          })
-        .catch((err) => []);
-    }
-
-    return recommendItems;
+        })
+      .catch((err) => []);
   }
+
+  return recommendItems;
+}
+
+
+async function getRecommendation(url, bearerToken) {
+  var recommendItems = [];
+  if (url) {
+    recommendItems = await fetch(url + '/?url=' + window.location.href,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+      }
+    )
+      .then((result) => result.json())
+      .then((result) => {return result})
+      .catch((err) => []);
+  }
+
+  return recommendItems;
+}
+
+
+function getListViews(recommendations) {
+  if (Array.isArray(recommendations)) {
+    for (var idx=0; idx < recommendations.length; idx++) {
+      const res = recommendations[idx];
+      const recommendItems = res.items;
+      const itemType = res.itemType;
+      const recommendType = res.recommendType;
+      if (recommendItems.length) {
+        title = `Les ${itemType == "events" ? "événements" : "articles"}`;
+  
+        if (recommendType == "Most popular") {
+          title += " les plus populaires";
+        } else if (recommendType == "Upcoming") {
+          title += " à venir";
+        } else {
+          title += " connexes";
+        }
+        var recommendDivId = `recommendation-${idx}`
+        document.getElementById("recommendations").innerHTML+= `<div id=${recommendDivId}></div>`
+        document.getElementById(recommendDivId).innerHTML += `
+                  <div class="recommend">
+                      <h2 class="recommend-title">${title}</h2>
+                      <div class="recommend-content" id="${title}">
+                      </div>
+                  </div>
+              `;
+  
+        for (item of recommendItems) {
+          document.getElementById(title).innerHTML += `
+                      <div class="recommend-container">
+                          <img src="${item.img}" class="recommend-image"/>
+                          <p class="recommend-name">
+                              ${
+                                itemType == "events"
+                                  ? item.event_name
+                                  : item.product_name
+                              }
+                          </p>
+                          ${
+                            itemType == "events"
+                              ? `<div class="recommend-time">
+                              <div>${item.next_date ? item.next_date.substring(0, 10) + "-" + item.location_name : item.location_name}</div>
+                          </div>`
+                              : ""
+                          }
+                          <div class="recommend-type">
+                              <div>${
+                                itemType == "events"
+                                  ? item.event_type.toUpperCase()
+                                  : item.product_type.toUpperCase()
+                              }</div>
+                          </div>
+                          <a href="${item.url}" class="zoom">
+                              En savoir plus &#x2192;
+                          </a>
+                      </div>
+                  `;
+        }
+      }
+    }
+  }
+}

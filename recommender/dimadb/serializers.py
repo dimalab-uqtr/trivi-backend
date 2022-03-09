@@ -10,11 +10,11 @@ class InteractionSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Events
-        fields = ('id', 'event_id', 'event_name', 'event_type',)
+        fields = ('id', 'event_id', 'event_name', 'event_type', 'url')
 class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Products
-        fields = ('id', 'product_id', 'product_name', 'product_type')
+        fields = ('id', 'product_id', 'product_name', 'product_type', 'url')
 class ImportInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImportInfo
