@@ -1,4 +1,3 @@
-from tkinter import E
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -986,11 +985,21 @@ def get_recommend_api(request):
         #Get recommend api + recommend list
         api = generate_recommend_api(level, item_type, recommend_type, quantity, domain, item_url)
         list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url)
-        # embedded_link_not_gui = get_embedded_link(api, recommend_type, is_gui=False)
-        # embedded_link_gui = get_embedded_link(api, recommend_type, is_gui=True)
-        embedded_link_not_gui = get_embedded_recommendation(is_gui=False)
-        embedded_link_gui = get_embedded_recommendation(is_gui=True)
-        return Response({'items': list_recommend_items, 'api': api, 'apiKey': API_KEY, 'embeddedLinkNotGui': embedded_link_not_gui, 'embeddedLinkGui': embedded_link_gui}, status=status.HTTP_200_OK)
+        embedded_links = [
+            {
+                "name": "Lien de recommandation intégré dans chaque page sans GUI",
+                "link": get_embedded_link(api, recommend_type, is_gui=False),
+            }, {
+                "name": "Lien de recommandation intégré dans chaque page avec GUI",
+                "link":  get_embedded_link(api, recommend_type, is_gui=True),
+            }
+        ]
+        
+        return Response({
+            'items': list_recommend_items, 
+            'api': api, 'apiKey': API_KEY, 
+            'embeddedDynamicLinks': embedded_links, 
+            }, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
 
@@ -1042,11 +1051,19 @@ def get_recommend_info(request):
                 "types": article_types
             }    
         }
+        
+        embedded_links = [
+            {
+                 "name": "Lien de recommandation intégré dans toutes les pages sans GUI",
+                "link":  get_embedded_recommendation(is_gui=False),
+            }, 
+            {
+                 "name": "Lien de recommandation intégré dans toutes les pages avec GUI",
+                "link":  get_embedded_recommendation(is_gui=True)
+            }
+        ]
 
-        return Response({'events': event_serializer.data,
-                         'products': article_serializer.data,
-                         'eventTypes': event_types,
-                         'articleTypes': article_types,
+        return Response({'embeddedFixedLinks': embedded_links,
                          'recommendLevels': recommend_levels,
                          'listItemInfos': list_item_infos}, status=status.HTTP_200_OK)
     except Exception as error:
@@ -1701,11 +1718,11 @@ def get_recommendation(request):
                         item_domain = domain
                         break
                     
-            if (url == 'file:///Users/nguyenchannam/Desktop/test.html'):
-                recommend_level = 'Item'
-                item_type = 'events'
-                recommend_types = ['Similar']
-                item_url = 'https://dici.ca/evenements/helene-guilmaine-a-l-origine-les-deesses-meres'
+            # if (url == 'file:///Users/nguyenchannam/Desktop/test.html'):
+            #     recommend_level = 'Item'
+            #     item_type = 'events'
+            #     recommend_types = ['Similar']
+            #     item_url = 'https://dici.ca/evenements/helene-guilmaine-a-l-origine-les-deesses-meres'
                 
             for recommend_type in recommend_types:
                 recommends = get_recommend_items(recommend_level, item_type, recommend_type, 4, item_domain, item_url)
