@@ -18,4 +18,4 @@ class ArticleSerializer(serializers.ModelSerializer):
 class ImportInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImportInfo
-        fields = '__all__'
+        fields = ('id', 'source_name', 'import_date')

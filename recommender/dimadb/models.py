@@ -29,7 +29,8 @@ class LdaSimilarity(models.Model):
 class ImportInfo(models.Model):
     id = models.AutoField(primary_key=True)
     table_name = models.CharField(max_length=50, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    source_name = models.CharField(max_length=200, null=True, blank=True)
+    import_date = models.DateTimeField(auto_now_add=True)
 
 # New_event:
 class Events(models.Model):

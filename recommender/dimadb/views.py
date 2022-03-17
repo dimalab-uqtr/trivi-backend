@@ -444,14 +444,14 @@ def create_connected_object(form_info, connected_field1_id, connected_field2_id)
 
 
 #Mapping data in file with data model
-def mapping_data(data, template):
+def mapping_data(data, template, source_name):
     try:
         total = 0   # Total object rows in imported data
         count = 0   # Total object rows saved in database
         if isinstance(data, list):
             total = len(data)
             # Store history of import
-            import_info = ImportInfo(table_name=template['model_name'])
+            import_info = ImportInfo(table_name=template['model_name'], source_name=source_name)
             import_info.save()
             
             # Get info from schema_detail
@@ -610,7 +610,7 @@ def import_json_file(request, item_type):
             json_data = reformated_data(json_data, item_type, template_type)
 
         #Mapping and saving in database
-        mapping_result = mapping_data(json_data, template)
+        mapping_result = mapping_data(json_data, template, file.name)
         return Response(mapping_result, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
@@ -654,7 +654,7 @@ def import_api(request, item_type):
 
         # Import
         mapping_template = get_json_info(mapping_template_file_path, item_type + '.' + template_type)
-        mapping_result = mapping_data(response_data, mapping_template)
+        mapping_result = mapping_data(response_data, mapping_template, url)
 
         return Response(mapping_result, status=status.HTTP_200_OK)
     except Exception as error:
@@ -672,6 +672,7 @@ def get_import_info(request, item_type):
         }
         snippets = ImportInfo.objects.filter(table_name=tables[item_type])
         serializer = ImportInfoSerializer(snippets, many=True)
+        
         return Response({'items': serializer.data}, status=status.HTTP_200_OK)
     except Exception as error:
         return Response({'message': error})
@@ -1110,8 +1111,10 @@ def get_configure_info(request):
         existed_web_activity_types = [item['name'] for item in list(existed_web_activity_types)]
         web_activity_types = web_activity_types + existed_web_activity_types
         web_activity_types = list(dict.fromkeys(web_activity_types))
-
+        web_activity_types = [type for type in web_activity_types if type in ['user_engagement', 'scroll', 'page_view']]
+        
         web_activities_info = {}
+        
         for activity_type in web_activity_types:
             try:
                 activity_type_obj = WebActivityType.objects.get(name=activity_type)
@@ -1573,7 +1576,7 @@ def synchronize_google_analytic(request):
         item_type = 'google-analytic'
         template_type = 'default'
         json_data = reformated_data(reports, item_type, template_type)
-        import_info = ImportInfo(table_name='interaction_ga')
+        import_info = ImportInfo(table_name='interaction_ga', source_name=ga_version)
         import_info.save()
         
         for record in json_data:
