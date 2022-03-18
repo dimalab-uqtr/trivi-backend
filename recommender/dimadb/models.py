@@ -73,7 +73,7 @@ class Products(models.Model):
     id = models.AutoField(primary_key=True)
     product_id = models.CharField(max_length=150, unique=True)
     product_name = models.CharField(max_length=150, null=True, blank=True)
-    product_type = models.CharField(max_length=150, null=True, blank=True)
+    product_type = models.CharField(max_length=150, choices=(('Musées','Musées'), ('Arts de la scène','Arts de la scène'), ('Littérature','Littérature'), ('Arts visuels','Arts visuels'), ('Arts médiatiques','Arts médiatiques'), ("Métiers d'art", "Métiers d'art"), ('Patrimoine','Patrimoine'), ('Autres','Autres')), default='Autres', null=True, blank=True)
     product_price = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True)
     product_revenue = models.DecimalField(

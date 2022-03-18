@@ -1039,10 +1039,10 @@ def get_recommend_api(request):
         list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url)
         embedded_links = [
             {
-                "name": "Lien de recommandation intégré dans chaque page sans GUI",
+                "name": "Script de recommandation intégré dans chaque page sans GUI",
                 "link": get_embedded_link(api, recommend_type, is_gui=False),
             }, {
-                "name": "Lien de recommandation intégré dans chaque page avec GUI",
+                "name": "Script de recommandation intégré dans chaque page avec GUI",
                 "link":  get_embedded_link(api, recommend_type, is_gui=True),
             }
         ]
@@ -1106,11 +1106,11 @@ def get_recommend_info(request):
         
         embedded_links = [
             {
-                 "name": "Lien de recommandation intégré dans toutes les pages sans GUI",
+                 "name": "Script de recommandation intégré dans toutes les pages sans GUI",
                 "link":  get_embedded_recommendation(is_gui=False),
             }, 
             {
-                 "name": "Lien de recommandation intégré dans toutes les pages avec GUI",
+                 "name": "Script de recommandation intégré dans toutes les pages avec GUI",
                 "link":  get_embedded_recommendation(is_gui=True)
             }
         ]
