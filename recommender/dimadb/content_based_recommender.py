@@ -11,8 +11,9 @@ class ContentBasedRecommender():
         
     @staticmethod
     def recommend_items_by_items(table_name, items_id):
-        source_records = LdaSimilarity.objects.filter(source=items_id, item_type=table_name)
-        target_records = LdaSimilarity.objects.filter(target=items_id, item_type=table_name)
+        threshold = 0.8
+        source_records = LdaSimilarity.objects.filter(source=items_id, item_type=table_name, similarity__gte=threshold)
+        target_records = LdaSimilarity.objects.filter(target=items_id, item_type=table_name, similarity__gte=threshold)
         
         records = []
         records = records + [{'id': item.target, 'similarity_score': item.similarity} for item in list(source_records)]

@@ -115,7 +115,7 @@ def home(request):
             },
             {
                 'id': 'event-chart',
-                'title': 'Statistique d’événements par types',
+                'title': 'Statistiques d’événements par types',
                 'data': event_report,
                 'type': 'column'
             },
@@ -905,7 +905,7 @@ def get_similar(table_name, quantity=1, item_url=None, recommend_type=None):
                 obj['next_date'] = list_event_dates[0]['date']
                 list_filtered_obj.append(obj)
         if (len(list_filtered_obj)):        
-            list_similar_items = sorted(list_filtered_obj, key=lambda x: x['next_date'])
+            list_similar_items = sorted(list_filtered_obj, key=lambda x: x['similarity_score'], reverse=True)
         else:
             list_similar_items = []
     
@@ -1016,10 +1016,7 @@ def get_embedded_link(api, recommend_type, is_gui=False):
         recommend_link += '\t\tconsole.log(res);' + '\n'
     recommend_link += '\t});' + '\n'
     recommend_link += '</script>'
-    if (is_gui):
-        embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
-    else:
-        embedded_link = js_link + '\n' + recommend_link
+    embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
     
     return embedded_link
 
@@ -1039,10 +1036,10 @@ def get_recommend_api(request):
         list_recommend_items = get_recommend_items(level, item_type, recommend_type, quantity, domain, item_url)
         embedded_links = [
             {
-                "name": "Script de recommandation intégré dans chaque page sans GUI",
+                "name": "Script dynamique et intégré dans chaque page (sans la génération des interfaces)",
                 "link": get_embedded_link(api, recommend_type, is_gui=False),
             }, {
-                "name": "Script de recommandation intégré dans chaque page avec GUI",
+                "name": "Script dynamique et intégré dans chaque page (avec la génération des interfaces)",
                 "link":  get_embedded_link(api, recommend_type, is_gui=True),
             }
         ]
@@ -1075,11 +1072,42 @@ def train_similar_recommend(request):
 def get_recommend_info(request):
     try:
         # Recommend info
+        # recommend_levels = {
+        #     "Homepage": ["Upcoming", "Most popular"],
+        #     "Domain": ["Upcoming", "Most popular"],
+        #     "Item": ["Similar", "Similar combined with Most popular"]
+        # }
+        recommend_types = [
+            {
+                "name": "Upcoming",
+                "displayName": "À venir"
+            }, {
+                "name": "Most popular",
+                "displayName": "Les plus populaires"
+            }, {
+                "name": "Similar",
+                "displayName": "Produits similaires"
+            }, {
+                "name": "Similar combined with Most popular",
+                "displayName": "Produits similaires combinés avec les plus populaires"
+            }
+        ]
+        
         recommend_levels = {
-            "Homepage": ["Upcoming", "Most popular"],
-            "Domain": ["Upcoming", "Most popular"],
-            "Item": ["Similar", "Similar combined with Most popular"]
+            "Homepage": {
+                "displayName": "Page d'accueil",
+                "algorithms": [recommend_types[0], recommend_types[1]]
+            }, 
+            "Domain": {
+                "displayName": "Domaine",
+                "algorithms": [recommend_types[0], recommend_types[1]]
+            }, 
+            "Item": {
+                "displayName": "Produit",
+                "algorithms": [recommend_types[2], recommend_types[3]]
+            }
         }
+        
         # Get list domain(item_type)
         event_snippets = Events.objects.all()
         event_serializer = EventSerializer(event_snippets, many=True)
@@ -1106,11 +1134,11 @@ def get_recommend_info(request):
         
         embedded_links = [
             {
-                 "name": "Script de recommandation intégré dans toutes les pages sans GUI",
+                 "name": "Script fixé et intégré dans la page d'accueil (sans la génération des interfaces)",
                 "link":  get_embedded_recommendation(is_gui=False),
             }, 
             {
-                 "name": "Script de recommandation intégré dans toutes les pages avec GUI",
+                 "name": "Script fixé et intégré dans la page d'accueil (avec la génération des interfaces)",
                 "link":  get_embedded_recommendation(is_gui=True)
             }
         ]
@@ -1233,7 +1261,7 @@ def get_reports(request):
             sessions_file = Interaction_f.objects.filter(
                 visit_date__range=[start_date, end_date]).values('session_id').distinct().count()
             sessions_ga = Interaction_ga.objects.filter(
-                date__range=[start_date, end_date]).aggregate(Sum('session_count'))['session_count__sum']
+                date__range=[start_date, end_date]).aggregate(Sum('session_count'))['session_count__sum'] or 0
             sessions = [{'type': 'all', 'sum': sessions_file + sessions_ga}]
         elif (group_type == 'daily'):
             sessions_file = Interaction_f.objects.filter(visit_date__range=[start_date, end_date]).values(
@@ -1279,7 +1307,7 @@ def get_reports(request):
             web_activities_file = Interaction_f.objects.filter(
                 visit_date__range=[start_date, end_date]).all().count()
             web_activities_ga = Interaction_ga.objects.filter(
-                date__range=[start_date, end_date]).aggregate(Sum('event_count'))['event_count__sum']
+                date__range=[start_date, end_date]).aggregate(Sum('event_count'))['event_count__sum'] or 0
             web_activities = [{'type': 'all', 'sum': web_activities_file + web_activities_ga}]
         elif (group_type == 'daily'):
             web_activities_file = Interaction_f.objects.filter(visit_date__range=[
@@ -1613,10 +1641,12 @@ def synchronize_google_analytic(request):
         #Update new google analytics parameter
         if (len(files)):
             old_json_key_file = dotenv.get_key(os.path.join(base_dir, '.env'), "GA_JSON_KEY_FILE")
-            old_json_key_file_name = os.path.join(module_dir, 'configuration/', old_json_key_file)
-            if default_storage.exists(old_json_key_file_name):
-                default_storage.delete(old_json_key_file_name)
+            if (old_json_key_file != ''):
+                old_json_key_file_name = os.path.join(module_dir, 'configuration/', old_json_key_file)
+                if default_storage.exists(old_json_key_file_name):
+                    default_storage.delete(old_json_key_file_name)
             default_storage.save(json_key_file, files[0])
+        
         dotenv.set_key(os.path.join(base_dir, '.env'), "GA_VERSION", ga_version)
         dotenv.set_key(os.path.join(base_dir, '.env'), "GA_VIEW_ID", view_id)
         dotenv.set_key(os.path.join(base_dir, '.env'), "GA_JSON_KEY_FILE", json_key_file_name)
@@ -1696,10 +1726,7 @@ def get_embedded_recommendation(is_gui=False):
         recommend_link += '\t\tconsole.log(res);' + '\n'
     recommend_link += '\t});' + '\n'
     recommend_link += '</script>'
-    if (is_gui):
-        embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
-    else:
-        embedded_link = js_link + '\n' + recommend_link
+    embedded_link = css_link + '\n' + div_link + '\n' + js_link + '\n' + recommend_link
     
     return embedded_link
 
